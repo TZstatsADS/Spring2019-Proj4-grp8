@@ -6,13 +6,20 @@
 
 Term: Spring 2019
 
-+ Team #
++ Team #8
 + Team members
-	+ team member 1
-	+ team member 2
-	+ team member 3
-	+ team member 4
-	+ team member 5
+
+	+ Hu, Xinyi xh2383@columbia.edu
+
+	+ Hu, Yiyao yh3076@columbia.edu
+
+	+ Lu, Shuang sl4397@columbia.edu
+
+	+ Tay, Hui Chiang ht2490@columbia.edu
+
+	+ Wang, Tianchen tw2665@columbia.edu
+	
++ Paper: D2 + C5
 
 + Project summary: In this project, we created an OCR post-processing procedure to enhance Tesseract OCR output. 
 	
