@@ -19,7 +19,7 @@ Term: Spring 2019
 
 	+ Wang, Tianchen tw2665@columbia.edu
 	
-+ Paper: D2[https://github.com/TZstatsADS/ADS_Teaching/blob/master/Projects_StarterCodes/Project4_OCR/doc/paper/D-2.pdf] + C5[https://github.com/TZstatsADS/ADS_Teaching/blob/master/Projects_StarterCodes/Project4_OCR/doc/paper/C-5.pdf]
++ Paper: D2[Link](https://github.com/TZstatsADS/ADS_Teaching/blob/master/Projects_StarterCodes/Project4_OCR/doc/paper/D-2.pdf) + C5[Link](https://github.com/TZstatsADS/ADS_Teaching/blob/master/Projects_StarterCodes/Project4_OCR/doc/paper/C-5.pdf)
 
 + Project summary: In this project, we created an OCR post-processing procedure to enhance Tesseract OCR output. 
 	
