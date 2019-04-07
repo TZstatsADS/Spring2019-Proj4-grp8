@@ -1,0 +1,184 @@
+---
+title: 'Optical character recognition (OCR)'
+output: 
+  html_document:
+    toc: true
+    toc_depth: 2
+    toc_float:
+      collapsed: false
+      smooth_scroll: false
+    number_sections: true
+    code_folding: hide
+---
+
+Xinyi Hu
+
+GU4243/GR5243: Applied Data Science
+```{r Load libraries}
+
+library(stringr)
+library(tm)
+library(tidytext)
+
+library(dplyr)
+library(topicmodels)
+library(ggplot2)
+library(reshape2)
+
+```
+
+```{r read files}
+#setwd("~/Desktop/GR5243 Applied Data Science/Project 4/project 4 edit")
+
+project_path = "~/Desktop/GR5243 Applied Data Science/Project 4/project 4 edit"
+true_path <- "/data/ground_truth/"
+OCR_path <- "/data/tesseract/"
+
+#true_path <- "../data/ground_truth/"
+#OCR_path <- "../data/tesseract/"
+#correctPath = "../output/correct/"
+
+ground_truth <- list.files(path=paste0(project_path,true_path), pattern="*.txt", full.names=TRUE, recursive=FALSE)
+OCR <- list.files(path=paste0(project_path,OCR_path), pattern="*.txt", full.names=TRUE, recursive=FALSE)
+
+#if(length(truthFiles) != length(ocrFiles)) stop("the number of ground truth files is not equal to the number of OCR recognized files")
+
+n <- length(ground_truth) # number of files
+
+# select train + validation and testing data 80% and 20%
+set.seed(2019)
+train <- sample(1:n, size = 0.7*n, replace = F)
+
+# set training data
+truthTrain <- ground_truth[train]
+ocrTrain <- OCR[train]
+
+# set testing data
+truthTest <- ground_truth[-train]
+ocrTest <- OCR[-train]
+```
+
+```{r Extract truth words}
+dictionary = Truth_Extract(ground_truth)
+
+save(dictionary, file = paste0(project_path,"/output/GroundTruthWords.Rdata"))
+
+Truth_Extract <- function(filenames){
+
+  #filenames <- ground_truth[1:3]  # for debugging
+  
+  text <- ""
+  for (file in filenames){
+    
+    text_lines = readLines(file)
+    text <- paste(text, 
+                  paste(text_lines, collapse = " ")
+                  )
+  }
+  
+  #text = "applied data science is challenging.!sfsfas 09073 \\W"
+  text <- strsplit(text," ")[[1]]
+  string <- text[text!=""]
+  #toSpace <- content_transformer(function(x, pattern) gsub(pattern, " ", x))
+
+  corpus <- VCorpus(VectorSource(string))%>%
+    tm_map(stripWhitespace)%>%
+    tm_map(content_transformer(tolower))%>%
+    tm_map(removeWords, character(0))%>%
+    tm_map(removeNumbers)%>%
+    tm_map(removePunctuation)#%>%
+    #tm_map(toSpace, "\\W")
+  
+  truth_words <- tidy(corpus) %>%
+    select(text) %>%
+    unnest_tokens(dictionary, text)
+    
+  
+  truth_words <- unique(truth_words)
+  truth_words <- as.matrix(truth_words)
+  truth_words <- truth_words[nchar(truth_words) > 1] # no single character words
+  #truth_words <- truth_words[truth_words!=""]
+  
+  #simple_num = sum(nchar(truth_words))
+  #simple_version = truth_words
+  #space_num = sum(nchar(truth_words))
+  #space_version = truth_words
+  return(truth_words)
+}
+
+```
+
+```{r Digrams short words}
+short = "abc ab ba ac bac cba cca bba aab"
+string = strsplit(short,split = " ")[[1]];string
+N = max(nchar(string))
+dic = list()
+
+for (i in 2:N){     # empty dictionary digrams
+   
+  dic[[i]] = list()   # word length
+  n = i*(i-1)/2      # number of distinct pairs in word with length i
+  
+  for (j in 1:n){
+    
+    dic[[i]][[j]] = matrix(0, nrow = 4, ncol = 4)
+    
+  }
+}
+
+for (word in string){
+  
+  n = nchar(word)
+  count_pair = 1
+  
+  for (i in 1:(n-1)){
+    for (j in 2:n){
+      if (i<j){
+        
+        row_index = match(substr(word, i, i),letters)
+        col_index = match(substr(word, j, j),letters)
+        dic[[n]][[count_pair]][row_index,col_index] = 1
+        count_pair = count_pair + 1
+      }
+    }
+  }
+}
+dic[[2]]
+dic[[3]]
+```
+
+```{r Digrams 36x36}
+# text = "applied data science is a challenging course"
+text = "applied data science is challenging"
+string = strsplit(text,split = " ")[[1]];string
+N = max(nchar(string))
+dic = list()
+numberletters = c(0:9, letters)
+
+for (i in 2:N){     # empty dictionary digrams
+  dic[[i]] = list()   # word length
+  #cat(i, "\n")
+  n = i*(i-1)/2      # number of distinct pairs in word with length i
+  for (j in 1:n){
+    dic[[i]][[j]] = matrix(0, nrow = 36, ncol = 36)
+  }
+}
+
+length(dic[[4]])
+
+for (word in string){
+  n = nchar(word)
+  count_pair = 1
+  for (i in 1:(n-1)){
+    for (j in 2:n){
+      if (i<j){
+        row_index = match(substr(word, i, i),numberletters)
+        col_index = match(substr(word, j, j),numberletters)
+        dic[[n]][[count_pair]][row_index,col_index] = 1
+        count_pair = count_pair + 1
+      }
+    }
+  }
+}
+```
+
