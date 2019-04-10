@@ -1,0 +1,237 @@
+---
+title: 'Optical character recognition (OCR)'
+output: 
+  html_document:
+    toc: true
+    toc_depth: 2
+    toc_float:
+      collapsed: false
+      smooth_scroll: false
+    number_sections: true
+    code_folding: hide
+---
+
+
+GU4243/GR5243: Applied Data Science
+```{r Load libraries}
+
+library(stringr)
+library(tm)
+library(tidytext)
+
+library(dplyr)
+library(topicmodels)
+library(ggplot2)
+library(reshape2)
+
+```
+
+```{r read files}
+#setwd("/Users/huyiyao/Desktop/Spring2019-Proj4-grp8-1-master")
+
+project_path = "/Users/huyiyao/Desktop/Spring2019-Proj4-grp8-1-master"
+true_path <- "/data/ground_truth/"
+OCR_path <- "/data/tesseract/"
+
+#true_path <- "../data/ground_truth/"
+#OCR_path <- "../data/tesseract/"
+#correctPath = "../output/correct/"
+
+ground_truth <- list.files(path=paste0(project_path,true_path), pattern="*.txt", full.names=TRUE, recursive=FALSE)
+OCR <- list.files(path=paste0(project_path,OCR_path), pattern="*.txt", full.names=TRUE, recursive=FALSE)
+
+#if(length(truthFiles) != length(ocrFiles)) stop("the number of ground truth files is not equal to the number of OCR recognized files")
+
+n <- length(ground_truth) # number of files
+
+# select train + validation and testing data 80% and 20%
+set.seed(2019)
+train <- sample(1:n, size = 0.7*n, replace = F)
+
+# set training data
+truthTrain <- ground_truth[train]
+ocrTrain <- OCR[train]
+
+# set testing data
+truthTest <- ground_truth[-train]
+ocrTest <- OCR[-train]
+#划分训练和测试集文件。。
+```
+
+```{r Extract truth words}
+Truth_Extract <- function(filenames){
+
+  #filenames <- ground_truth[1:3]  # for debugging
+  
+  text <- ""
+  for (file in filenames){
+    
+    text_lines = readLines(file)
+    text <- paste(text, 
+                  paste(text_lines, collapse = " ")
+                  )
+  }
+  text<-gsub("[[:punct:]]", " ", text)
+  return(text)
+}
+
+dictionary = Truth_Extract(ground_truth)
+#所有文本放在一个向量一个元素里length(dictionary)
+save(dictionary, file = paste0(project_path,"/output/GroundTruthWords.Rdata"))
+
+  
+  #text = "applied data science is challenging.!sfsfas 09073 \\W"
+  text <- strsplit(dictionary," ")[[1]]
+  #分开每个单词
+  string <- text[text!=""] # 去掉空格元素
+  #toSpace <- content_transformer(function(x, pattern) gsub(pattern, " ", x))
+
+  corpus <- VCorpus(VectorSource(string))%>%
+    tm_map(stripWhitespace)%>%
+    tm_map(content_transformer(tolower))%>%
+    tm_map(removeWords, character(0))%>%
+    tm_map(removeNumbers)%>%
+    tm_map(removePunctuation)#%>%
+    #tm_map(toSpace, "\\W")
+  
+  truth_words <- tidy(corpus) %>%
+    select(text) %>%
+    unnest_tokens(dictionary, text)
+ #去掉符号，统一小写   
+ 
+  truth_words <- unique(truth_words)
+  truth_words <- as.matrix(truth_words)
+  truth_words <- truth_words[nchar(truth_words) > 1] # no single character words
+  #truth_words <- truth_words[truth_words!=""]
+  
+  #simple_num = sum(nchar(truth_words))
+  #simple_version = truth_words
+  #space_num = sum(nchar(truth_words))
+  #space_version = truth_words
+dim(truth_words)
+
+
+```
+
+
+
+
+```{r}
+# ground truth dict
+N = max(nchar(truth_words))
+dic = list()
+numberletters = c(0:9, letters)
+
+for (i in 2:N){     # empty dictionary digrams
+  dic[[i]] = list()   # word length
+  #cat(i, "\n")
+  n = i*(i-1)/2      # number of distinct pairs in word with length i
+  for (j in 1:n){
+    dic[[i]][[j]] = matrix(0, nrow = 36, ncol = 36)
+  }
+}
+
+str(string)
+str(c(truth_words))
+for (word in c(truth_words)){
+  n = nchar(word)
+  count_pair = 0
+  for (i in 1:(n-1)){
+    for (j in 2:n){
+      if (i<j){
+        row_index = match(substr(word, i, i),numberletters)
+        col_index = match(substr(word, j, j),numberletters)
+        count_pair = count_pair + 1
+        dic[[n]][[count_pair]][row_index,col_index] = 1
+        }
+    }
+  }
+}
+
+#dic[[24]][[3]]
+```
+
+
+```{r}
+for(i in 1:length(ocrTest)){
+  dictionary = Truth_Extract(ocrTest[9])
+#所有文本放在一个向量一个元素里length(dictionary)
+save(dictionary, file = paste0(project_path,"/output/textraw.Rdata"))
+
+  text <- strsplit(dictionary," ")[[1]]
+  #分开每个单词
+  string <- text[text!=""] # 去掉空格元素
+  #toSpace <- content_transformer(function(x, pattern) gsub(pattern, " ", x))
+
+  corpus <- VCorpus(VectorSource(string))%>%
+    tm_map(stripWhitespace)%>%
+    tm_map(content_transformer(tolower))%>%
+    tm_map(removeWords, character(0))%>%
+    tm_map(removeNumbers)%>%
+    tm_map(removePunctuation)#%>%
+    #tm_map(toSpace, "\\W")
+  
+  truth_words <- tidy(corpus) %>%
+    select(text) %>%
+    unnest_tokens(dictionary, text)
+ #去掉符号，统一小写   
+   truth_words <- as.matrix(truth_words)
+   truth_words <- truth_words[nchar(truth_words) > 1]
+
+  
+  #textraw=Truth_Extract(ocrTest[3]) #extract ith file's content
+ # save(textraw, file = paste0(project_path,"/output/textraw.Rdata"))
+  #stringraw=strsplit(textraw,split = " ")[[1]]
+  #stringprocess1 <-  stringraw[ stringraw!=""] # 去掉空格元素
+ # corpus <- VCorpus(VectorSource(stringprocess1))%>%
+   # tm_map(stripWhitespace)%>%
+   # tm_map(content_transformer(tolower))%>%
+   # tm_map(removeWords, character(0))%>%
+   # tm_map(removeNumbers)%>%
+   # tm_map(removePunctuation)
+
+   # stringprocess2 <- tidy(corpus) %>%
+   # select( stringraw) %>%
+   # unnest_tokens(textraw,  stringraw)
+    # remove space and mark and change to lower
+    
+    text <- as.matrix(truth_words)
+    
+    error_det_loc<-data.frame()
+    k=0
+
+    for( j in 1:length(text)){
+     n <-nchar(text[j])
+    
+   count_pair = 0
+   
+       for(l in 1:(n-1)){ 
+         for (m in 2:n) { 
+            if (l<m){
+      count_pair<-count_pair+1
+       row_index = match(substr(text[j], l, l),numberletters)
+       col_index = match(substr(text[j], m, m),numberletters)
+      if(dic[[n]][[count_pair]][row_index,col_index] == 0){
+        k=k+1
+        error_det_loc[k,]<-c(9,j)
+        break
+        }
+    }
+  
+} }
+    }   
+}
+
+tail(text)
+  
+
+x <- "a1~!@#$%^&*(){}_+:\"<>?,./;'[]-=bc" #or whatever
+str_replace_all(x, "[[:punct:]]", " ")
+str_replace_all(x, "[^[:alnum:]]", " ")
+x<-gsub("[[:punct:]]", " ", x)
+  text <- strsplit(x," ")[[1]]
+  #分开每个单词
+  string <- text[text!=""] # 去掉空格元素
+  string
+```
+
