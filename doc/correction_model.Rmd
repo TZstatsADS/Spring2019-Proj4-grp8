@@ -1,0 +1,30 @@
+---
+title: "correction_model"
+author: "Tianchen Wang"
+date: "2019/4/10"
+output: html_document
+---
+## Correction Model for OCR
+
+### input:
+docs, wrong words list, confusion matrix
+### output:
+corrected docs
+
+```{r packages}
+library(topicmodels)
+library(tidyverse)
+library(tidytext)
+```
+wrong.words : list[c(), c(), ..., c()], pay attention to the order of corpus
+docs : list[]
+```{r}
+wrong.words <- list()
+path <- "/Users/tianchenwang/Git/Spring2019-Proj4-grp8/data/ground_truth/"
+groundtruth.name <- list.files(path)
+groundtruth.docs <- list()
+for(i in 1:length(groundtruth.name)){
+  groundtruth.docs[i][[1]] <- read_file(paste0(path, groundtruth.name[i]))
+}
+
+```
