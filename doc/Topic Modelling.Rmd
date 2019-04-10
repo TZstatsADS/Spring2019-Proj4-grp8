@@ -1,0 +1,105 @@
+---
+title: "Topic Modelling"
+author: "Hui Chiang"
+date: "10/04/2019"
+output: html_document
+---
+```{r}
+library(tm)
+library(topicmodels)
+library(data.table)
+library(tidyverse)
+library(tidytext)
+
+#Import file names
+list_of_files <- list.files(
+  path = "/Users/tayhuichiang94/Desktop/columbia stuff/applied data science/ADS_ht2490/Spring2019-Proj4-grp8-1/data/ground_truth/.", 
+  recursive = TRUE,
+  pattern = "\\.txt$", 
+  full.names = TRUE)
+
+#Create corpus for topic modelling
+docs<- Corpus(DirSource(directory = "/Users/tayhuichiang94/Desktop/columbia stuff/applied data science/ADS_ht2490/Spring2019-Proj4-grp8-1/data/ground_truth/."))
+```
+
+```{r}
+#Preprocessing
+#Transform to lower case
+docs <-tm_map(docs,content_transformer(tolower))
+
+#Remove symbols
+toSpace <- content_transformer(function(x, pattern) { return (gsub(pattern, " " , x))})
+docs <- tm_map(docs, toSpace, '-')
+docs <- tm_map(docs, toSpace, '’')
+docs <- tm_map(docs, toSpace, '‘')
+docs <- tm_map(docs, toSpace, '•')
+docs <- tm_map(docs, toSpace, '”')
+docs <- tm_map(docs, toSpace, '“')
+docs <- tm_map(docs, toSpace, 'â')
+docs <- tm_map(docs, toSpace, '€')
+docs <- tm_map(docs, toSpace, '¢')
+docs <- tm_map(docs, toSpace, '™')
+
+#Remove punctuation
+docs <- tm_map(docs, removePunctuation)
+
+#Strip digits
+docs <- tm_map(docs, removeNumbers)
+
+#Remove stopwords
+#docs <- tm_map(docs, removeWords, stopwords('english'))
+
+#Remove whitespace
+docs <- tm_map(docs, stripWhitespace)
+
+#Check document
+writeLines(as.character(docs[[30]]))
+
+#Stem document
+#docs <- tm_map(docs,stemDocument)
+
+#Inspect a document as a check
+writeLines(as.character(docs[[30]]))
+
+#Create document-term matrix
+dtm <- DocumentTermMatrix(docs)
+
+#Collapse matrix by summing over columns
+freq <- colSums(as.matrix(dtm))
+
+#Create sort order (descending)
+ord <- order(freq,decreasing=TRUE)
+
+#Set Gibbs Sampler parameters
+burnin <- 1000
+iter <- 600
+thin <- 100
+seed <-list(2003,5,63,100001,765)
+nstart <- 5
+best <- TRUE
+k <- 5
+
+#Run LDA using Gibbs sampling
+raw.sum=apply(dtm,1,FUN=sum)
+dtm=dtm[raw.sum!=0,]
+ldaOut <-LDA(dtm,k, method='Gibbs', control=list(nstart=nstart, seed = seed, best=best, burnin = burnin, iter = iter, thin=thin))
+
+#Docs to topics
+ldaOut.topics <- as.matrix(topics(ldaOut))
+#write.csv(ldaOut.topics,file='/Users/tayhuichiang94/Desktop/columbia stuff/applied data science/ADS_ht2490/Spring2019-Proj2-grp10/doc/DocsToTopics_12.csv')
+          
+#Top 10 terms in each topic
+ldaOut.terms <- as.matrix(terms(ldaOut,10))
+#write.csv(ldaOut.terms,'/Users/tayhuichiang94/Desktop/columbia stuff/applied data science/ADS_ht2490/Spring2019-Proj2-grp10/doc/TopicsToTerms_12.csv')
+
+#Probabilities associated with each topic assignment
+topicProbabilities <- as.data.frame(ldaOut@gamma)
+#write.csv(topicProbabilities,'/Users/tayhuichiang94/Desktop/columbia stuff/applied data science/ADS_ht2490/Spring2019-Proj2-grp10/doc/TopicProbabilities_12.csv')
+
+test <- tidy(ldaOut, matrix='beta')
+test2 <- test %>% 
+          group_by(topic) %>% 
+          top_n(10, beta) %>% 
+          ungroup() %>% 
+          arrange(topic, -beta)
+```
