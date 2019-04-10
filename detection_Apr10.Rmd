@@ -33,16 +33,16 @@ OCR = list.files(path=paste0(project_path,OCR_path), pattern="*.txt", full.names
 n = length(ground_truth) # number of files
 
 # select train + validation and testing data 80% and 20%
-set.seed(2019)
-train = sample(1:n, size = 0.7*n, replace = F)
+#set.seed(2019)
+#train = sample(1:n, size = 0.7*n, replace = F)
 
 # set training data
-truthTrain = ground_truth[train]
-ocrTrain = OCR[train]
+#truthTrain = ground_truth[train]
+#ocrTrain = OCR[train]
 
 # set testing data
-truthTest = ground_truth[-train]
-ocrTest = OCR[-train]
+#truthTest = ground_truth[-train]
+#ocrTest = OCR[-train]
 ```
 
 ```{r Extract Ground Truth}
@@ -269,15 +269,15 @@ Detection = function(filenames, digrams){
 }
 
 
-#detection_train = Detection(ocrTrain, digrams = dic_digrams)
+#detection_ocr = Detection(OCR, digrams = dic_digrams)
 
-#save(detection_train, file = paste0(project_path,"/output/detection_train.Rdata"))
+#save(detection_ocr, file = paste0(project_path,"/output/detection_ocr.Rdata"))
 
-load(paste0(project_path,"/output/detection_train.Rdata"))
+load(paste0(project_path,"/output/detection_ocr.Rdata"))
 # Check
-length(detection_train)
-head(detection_train[[1]],20)
-tail(detection_train[[70]],20)
+length(detection_ocr)
+head(detection_ocr[[1]],20)
+tail(detection_ocr[[70]],20)
 
 ###### debug ######
 astr <- "Ábcdêãçoàúü"
