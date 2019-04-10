@@ -13,13 +13,13 @@ library(tidytext)
 
 #Import file names
 list_of_files <- list.files(
-  path = "/Users/tayhuichiang94/Desktop/columbia stuff/applied data science/ADS_ht2490/Spring2019-Proj4-grp8-1/data/ground_truth/.", 
+  path = "../data/ground_truth/.", 
   recursive = TRUE,
   pattern = "\\.txt$", 
   full.names = TRUE)
 
 #Create corpus for topic modelling
-docs<- Corpus(DirSource(directory = "/Users/tayhuichiang94/Desktop/columbia stuff/applied data science/ADS_ht2490/Spring2019-Proj4-grp8-1/data/ground_truth/."))
+docs<- Corpus(DirSource(directory = "../data/ground_truth/."))
 ```
 
 ```{r}
