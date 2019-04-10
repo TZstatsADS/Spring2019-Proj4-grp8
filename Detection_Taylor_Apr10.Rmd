@@ -10,6 +10,7 @@ Xinyi Hu
 library(stringr)
 library(tm)
 library(tidytext)
+library(dplyr)
 
 ```
 
@@ -48,11 +49,11 @@ ocrTest = OCR[-train]
 
 Truth_Extract = function(filenames){
 
-  #filenames <- ground_truth[1:3]  # for debugging
+  filenames <- ground_truth[1:5]  # for debugging
   
   text = ""
   for (file in filenames){
-    
+    #file = filenames[1]
     text_lines = readLines(file)
     text = paste(text, 
                   paste(text_lines, collapse = " ")
@@ -60,6 +61,7 @@ Truth_Extract = function(filenames){
   }
   
   #text = "applied data science is challenging.!sfsfas 09073 \\W"
+  text<-gsub("[[:punct:]]", " ", text)
   word = strsplit(text," ")[[1]]
   words = word[word!=""]
   #toSpace <- content_transformer(function(x, pattern) gsub(pattern, " ", x))
@@ -81,17 +83,19 @@ Truth_Extract = function(filenames){
   truth_words = as.matrix(truth_words)
   truth_words = truth_words[nchar(truth_words) > 1] # no single character words
   #truth_words = truth_words[truth_words!=""]
+
+  #check_punct = grep("[[:punct:]]", truth_words)
+  #check_num = grep("[0-9]", truth_words)
+  #check_punct
+  #check_num
+
   
-  #simple_num = sum(nchar(truth_words))
-  #simple_version = truth_words
-  #space_num = sum(nchar(truth_words))
-  #space_version = truth_words
   return(truth_words)
 }
 
-# dictionary = Truth_Extract(ground_truth)
+#dictionary = Truth_Extract(ground_truth)
 
-# save(dictionary, file = paste0(project_path,"/output/GroundTruthWords.Rdata"))
+#save(dictionary, file = paste0(project_path,"/output/GroundTruthWords.Rdata"))
 
 ```
 
@@ -112,6 +116,8 @@ for (i in 2:N){     # empty dictionary digrams
     
   }
 }
+dic[[1]] = "No single-character words"
+
 
 for (word in string){
   
@@ -135,10 +141,12 @@ dic[[3]]
 ```
 
 ```{r Digrams 36x36}
-# text = "applied data science is a challenging course"
-text = "applied data science is challenging"
-string = strsplit(text,split = " ")[[1]];string
-N = max(nchar(string))
+#text = "applied data science is challenging"
+#string = strsplit(text,split = " ")[[1]];string
+#N = max(nchar(string))
+
+test_dic = dictionary[1:1000]
+N = max(nchar(test_dic))
 dic = list()
 numberletters = c(0:9, letters)
 
@@ -150,19 +158,26 @@ for (i in 2:N){     # empty dictionary digrams
     dic[[i]][[j]] = matrix(0, nrow = 36, ncol = 36)
   }
 }
+dic[[1]] = "No single-character words"
+length(dic[[4]])   # Check
 
-length(dic[[4]])
-
-for (word in string){
+#for (word in string){
+for (word in test_dic){
+  
   n = nchar(word)
   count_pair = 1
+  
   for (i in 1:(n-1)){
+    
     for (j in 2:n){
+      
       if (i<j){
+        
         row_index = match(substr(word, i, i),numberletters)
         col_index = match(substr(word, j, j),numberletters)
         dic[[n]][[count_pair]][row_index,col_index] = 1
         count_pair = count_pair + 1
+        
       }
     }
   }
