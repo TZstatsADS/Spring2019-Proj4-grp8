@@ -140,7 +140,7 @@ dic[[2]]
 dic[[3]]
 ```
 
-```{r Digrams 36x36}
+```{r Digrams 36x36 26x26}
 #text = "applied data science is challenging"
 #string = strsplit(text,split = " ")[[1]];string
 #N = max(nchar(string))
@@ -148,18 +148,21 @@ dic[[3]]
 test_dic = dictionary[1:1000]
 N = max(nchar(test_dic))
 dic = list()
-numberletters = c(0:9, letters)
+#numberletters = c(0:9, letters)
 
 for (i in 2:N){     # empty dictionary digrams
   dic[[i]] = list()   # word length
   #cat(i, "\n")
   n = i*(i-1)/2      # number of distinct pairs in word with length i
   for (j in 1:n){
-    dic[[i]][[j]] = matrix(0, nrow = 36, ncol = 36)
+    #dic[[i]][[j]] = matrix(0, nrow = 36, ncol = 36)
+    dic[[i]][[j]] = matrix(0, nrow = 26, ncol = 26)
+
   }
 }
 dic[[1]] = "No single-character words"
 length(dic[[4]])   # Check
+length(dic[[5]])
 
 #for (word in string){
 for (word in test_dic){
@@ -173,8 +176,10 @@ for (word in test_dic){
       
       if (i<j){
         
-        row_index = match(substr(word, i, i),numberletters)
-        col_index = match(substr(word, j, j),numberletters)
+        #row_index = match(substr(word, i, i),numberletters)
+        #col_index = match(substr(word, j, j),numberletters)
+        row_index = match(substr(word, i, i),letters)
+        col_index = match(substr(word, j, j),letters)
         dic[[n]][[count_pair]][row_index,col_index] = 1
         count_pair = count_pair + 1
         
@@ -182,7 +187,72 @@ for (word in test_dic){
     }
   }
 }
+#check
+dic[[1]]
+apply(dic[[5]][[4]],2,sum)
 ```
+
+```{r Dic-Digrams}
+Digrams = function(dictionary){
+  
+  dic = dictionary  # character vector
+  
+  N = max(nchar(dic))
+  digrams = list()
+  #numberletters = c(0:9, letters)
+
+  for (i in 2:N){     # empty dictionary digrams
+    
+    digrams[[i]] = list()   # word length
+    n = i*(i-1)/2      # number of distinct pairs in word with length i
+    
+    for (j in 1:n){
+      #dic[[i]][[j]] = matrix(0, nrow = 36, ncol = 36)
+      digrams[[i]][[j]] = matrix(0, nrow = 26, ncol = 26)
+  
+    }
+  }
+  digrams[[1]] = "No single-character words"
+  #length(digrams) == N
+
+  #for (word in string){
+  for (word in dic){
+  
+    n = nchar(word)
+    count_pair = 1
+  
+    for (i in 1:(n-1)){
+    
+      for (j in 2:n){
+      
+        if (i<j){
+        
+          #row_index = match(substr(word, i, i),numberletters)
+          #col_index = match(substr(word, j, j),numberletters)
+          row_index = match(substr(word, i, i),letters)
+          col_index = match(substr(word, j, j),letters)
+          digrams[[n]][[count_pair]][row_index,col_index] = 1
+          count_pair = count_pair + 1
+        
+        }
+      }
+    }
+  }
+
+  # apply(digrams[[24]][[270]],2,sum)
+  # length(digrams[[24]])
+
+  
+  return(digrams)
+}
+
+dic_digrams = Digrams(dictionary)
+
+save(dic_digrams, file = paste0(project_path,"/output/digrams.Rdata"))
+
+```
+
+
 
 ```{r Extract OCR}
   
