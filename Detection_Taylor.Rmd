@@ -1,87 +1,70 @@
 ---
-title: 'Optical character recognition (OCR)'
-output: 
-  html_document:
-    toc: true
-    toc_depth: 2
-    toc_float:
-      collapsed: false
-      smooth_scroll: false
-    number_sections: true
-    code_folding: hide
+title: 'Detection Part'
+output: html_notebook
 ---
 
 Xinyi Hu
 
-GU4243/GR5243: Applied Data Science
 ```{r Load libraries}
 
 library(stringr)
 library(tm)
 library(tidytext)
 
-library(dplyr)
-library(topicmodels)
-library(ggplot2)
-library(reshape2)
-
 ```
 
 ```{r read files}
 #setwd("~/Desktop/GR5243 Applied Data Science/Project 4/project 4 edit")
 
-project_path = "~/Desktop/GR5243 Applied Data Science/Project 4/project 4 edit"
-true_path <- "/data/ground_truth/"
-OCR_path <- "/data/tesseract/"
+project_path = "~/Desktop/GR5243 Applied Data Science/Project 4/Spring2019-Proj4-grp8-1"
+true_path = "/data/ground_truth/"
+OCR_path = "/data/tesseract/"
 
 #true_path <- "../data/ground_truth/"
 #OCR_path <- "../data/tesseract/"
 #correctPath = "../output/correct/"
 
-ground_truth <- list.files(path=paste0(project_path,true_path), pattern="*.txt", full.names=TRUE, recursive=FALSE)
-OCR <- list.files(path=paste0(project_path,OCR_path), pattern="*.txt", full.names=TRUE, recursive=FALSE)
+ground_truth = list.files(path=paste0(project_path,true_path), pattern="*.txt", full.names=TRUE, recursive=FALSE)
+OCR = list.files(path=paste0(project_path,OCR_path), pattern="*.txt", full.names=TRUE, recursive=FALSE)
 
 #if(length(truthFiles) != length(ocrFiles)) stop("the number of ground truth files is not equal to the number of OCR recognized files")
 
-n <- length(ground_truth) # number of files
+n = length(ground_truth) # number of files
 
 # select train + validation and testing data 80% and 20%
 set.seed(2019)
-train <- sample(1:n, size = 0.7*n, replace = F)
+train = sample(1:n, size = 0.7*n, replace = F)
 
 # set training data
-truthTrain <- ground_truth[train]
-ocrTrain <- OCR[train]
+truthTrain = ground_truth[train]
+ocrTrain = OCR[train]
 
 # set testing data
-truthTest <- ground_truth[-train]
-ocrTest <- OCR[-train]
+truthTest = ground_truth[-train]
+ocrTest = OCR[-train]
 ```
 
-```{r Extract truth words}
-dictionary = Truth_Extract(ground_truth)
+```{r Extract Ground Truth}
 
-save(dictionary, file = paste0(project_path,"/output/GroundTruthWords.Rdata"))
-
-Truth_Extract <- function(filenames){
+Truth_Extract = function(filenames){
 
   #filenames <- ground_truth[1:3]  # for debugging
   
-  text <- ""
+  text = ""
   for (file in filenames){
     
     text_lines = readLines(file)
-    text <- paste(text, 
+    text = paste(text, 
                   paste(text_lines, collapse = " ")
                   )
   }
   
   #text = "applied data science is challenging.!sfsfas 09073 \\W"
-  text <- strsplit(text," ")[[1]]
-  string <- text[text!=""]
+  word = strsplit(text," ")[[1]]
+  words = word[word!=""]
   #toSpace <- content_transformer(function(x, pattern) gsub(pattern, " ", x))
 
-  corpus <- VCorpus(VectorSource(string))%>%
+  corpus = VCorpus(VectorSource(words))%>%
     tm_map(stripWhitespace)%>%
     tm_map(content_transformer(tolower))%>%
     tm_map(removeWords, character(0))%>%
@@ -89,15 +72,15 @@ Truth_Extract <- function(filenames){
     tm_map(removePunctuation)#%>%
     #tm_map(toSpace, "\\W")
   
-  truth_words <- tidy(corpus) %>%
+  truth_words = tidy(corpus) %>%
     select(text) %>%
     unnest_tokens(dictionary, text)
     
   
-  truth_words <- unique(truth_words)
-  truth_words <- as.matrix(truth_words)
-  truth_words <- truth_words[nchar(truth_words) > 1] # no single character words
-  #truth_words <- truth_words[truth_words!=""]
+  truth_words = unique(truth_words)
+  truth_words = as.matrix(truth_words)
+  truth_words = truth_words[nchar(truth_words) > 1] # no single character words
+  #truth_words = truth_words[truth_words!=""]
   
   #simple_num = sum(nchar(truth_words))
   #simple_version = truth_words
@@ -105,6 +88,10 @@ Truth_Extract <- function(filenames){
   #space_version = truth_words
   return(truth_words)
 }
+
+# dictionary = Truth_Extract(ground_truth)
+
+# save(dictionary, file = paste0(project_path,"/output/GroundTruthWords.Rdata"))
 
 ```
 
@@ -181,4 +168,213 @@ for (word in string){
   }
 }
 ```
+
+```{r Extract OCR}
+  
+  filenames = ocrTrain[1:5]
+  text = ""
+  for (file in filenames){
+    
+    text_lines = readLines(file)
+    text = paste(text, 
+                  paste(text_lines, collapse = " ")
+                  )
+  }
+  word = strsplit(text," ")[[1]]
+  words = word[word!=""]
+  n = length(words)
+  
+  
+  ocr_words = c()
+  i = 1            
+  for (file in filenames){
+    #file = filenames[1]
+    text_lines = readLines(file)
+    text = paste(text, 
+                  paste(text_lines, collapse = " ")
+                  )
+    #txt_word = unlist(strsplit(text," "))
+    ocr_words[i] = text
+    i = i+1               # count .txt 
+  }
+  
+  ocr_txt_word = strsplit(ocr_words," ")   
+  # each of 100 txts contains its own words, store in a single list
+  
+  for (i in 1:length(ocr_txt_word)){
+    ocr_txt_word[[i]] = ocr_txt_word[[i]][ocr_txt_word[[i]]!=""]# clean null words
+  }
+  
+  n1 = nchar(ocr_txt_word[[1]])
+  sum(n1)
+  
+  n = sum(nchar(ocr_txt_word))
+  
+  word_map = matrix(NA, ncol = 4, nrow = n)
+  colnames(word_map) = c("word", "word_index", "txt", "incorrect")
+  
+  i = 1
+  for (t in 1:length(ocr_txt_word)){
+  # t = 1
+    for (w in 1:length(ocr_txt_word[[t]])){
+   #   w = 2
+      word_map[i,] = c(ocr_txt_word[[t]][w], w, t, 0)
+      i = i+1
+    }
+  }
+  see = as.data.frame(word_map)
+  na.index = is.na(word_map[,1])
+  ####################################################
+  # create dataset of words
+
+  # tokens -> list[[docs]] -> each [[doc]] -> [[lines]] -> each [[line]] -> [words]
+  
+  bag <- matrix(NA, ncol = 5, nrow = n, 
+                dimnames = list(rep("", n), c("token", "word", "line", "doc", "error")))
+  
+  i <- 1
+  for(d in 1:length(tokens)){ # each txt
+    for(l in 1:length(tokens[[d]])){ # d th txt with n_d words
+      for(w in 1:length(tokens[[d]][[l]])){ # extract each word in d th txt
+        bag[i,] <- c(tokens[[d]][[l]][w], w, l, d, 0)  # c(exact word, word posi in line l, line l in doc d, doc d in tokens, error)
+        i <- i + 1
+      }
+    }
+  }
+  
+  #d = 1;l = 3
+  #head(tokens[[d]])
+  #tokens[[d]][[l]]
+  #length(tokens[[d]][[l]])
+  
+  bag <- bag[complete.cases(bag),]
+  length(bag)
+  nrow(bag)
+  
+  # toSpace <- content_transformer(function(x, pattern) gsub(pattern, " ", x))
+  
+  corpus <- VCorpus(VectorSource(bag[,1]))%>%
+    tm_map(content_transformer(tolower))%>%
+    # tm_map(toSpace, "\\W")%>%
+    tm_map(removePunctuation)%>%
+    tm_map(removeWords, character(0))%>%
+    tm_map(stripWhitespace)
+  
+  library(textreg)
+  b <- convert.tm.to.character(corpus)
+  bag[,1] <- b
+  
+  assign(outName, bag)
+  save(list=outName, file = paste0("../output/", outName, ".RData"))
+  return(eval(as.name(paste(outName))))
+
+```
+
+
+```{r Extract OCR version 2}
+  
+  filenames = ocrTrain[1:5]
+  #text = ""
+  text = list()
+  i = 1
+  for (file in filenames){
+    
+    text[[i]] = readLines(file)
+    #text_lines = readLines(file)
+   # text = paste(text, 
+    #              paste(text_lines, collapse = " ")
+     #             )
+    i = i+1
+  }
+  word = strsplit(text," ")[[1]]
+  words = word[word!=""]
+  n = length(words)
+  
+  
+  ocr_words = c()
+  i = 1            
+  for (file in filenames){
+    #file = filenames[1]
+    text_lines = readLines(file)
+    text = paste(text, 
+                  paste(text_lines, collapse = " ")
+                  )
+    #txt_word = unlist(strsplit(text," "))
+    ocr_words[i] = text
+    i = i+1               # count .txt 
+  }
+  
+  ocr_txt_word = strsplit(ocr_words," ")   
+  # each of 100 txts contains its own words, store in a single list
+  
+  for (i in 1:length(ocr_txt_word)){
+    ocr_txt_word[[i]] = ocr_txt_word[[i]][ocr_txt_word[[i]]!=""]# clean null words
+  }
+  
+  n1 = nchar(ocr_txt_word[[1]])
+  sum(n1)
+  
+  n = sum(nchar(ocr_txt_word))
+  
+  word_map = matrix(NA, ncol = 4, nrow = n)
+  colnames(word_map) = c("word", "word_index", "txt", "incorrect")
+  
+  i = 1
+  for (t in 1:length(ocr_txt_word)){
+  # t = 1
+    for (w in 1:length(ocr_txt_word[[t]])){
+   #   w = 2
+      word_map[i,] = c(ocr_txt_word[[t]][w], w, t, 0)
+      i = i+1
+    }
+  }
+  see = as.data.frame(word_map)
+  na.index = is.na(word_map[,1])
+  ####################################################
+  # create dataset of words
+
+  # tokens -> list[[docs]] -> each [[doc]] -> [[lines]] -> each [[line]] -> [words]
+  
+  bag <- matrix(NA, ncol = 5, nrow = n, 
+                dimnames = list(rep("", n), c("token", "word", "line", "doc", "error")))
+  
+  i <- 1
+  for(d in 1:length(tokens)){ # each txt
+    for(l in 1:length(tokens[[d]])){ # d th txt with n_d words
+      for(w in 1:length(tokens[[d]][[l]])){ # extract each word in d th txt
+        bag[i,] <- c(tokens[[d]][[l]][w], w, l, d, 0)  # c(exact word, word posi in line l, line l in doc d, doc d in tokens, error)
+        i <- i + 1
+      }
+    }
+  }
+  
+  #d = 1;l = 3
+  #head(tokens[[d]])
+  #tokens[[d]][[l]]
+  #length(tokens[[d]][[l]])
+  
+  bag <- bag[complete.cases(bag),]
+  length(bag)
+  nrow(bag)
+  
+  # toSpace <- content_transformer(function(x, pattern) gsub(pattern, " ", x))
+  
+  corpus <- VCorpus(VectorSource(bag[,1]))%>%
+    tm_map(content_transformer(tolower))%>%
+    # tm_map(toSpace, "\\W")%>%
+    tm_map(removePunctuation)%>%
+    tm_map(removeWords, character(0))%>%
+    tm_map(stripWhitespace)
+  
+  library(textreg)
+  b <- convert.tm.to.character(corpus)
+  bag[,1] <- b
+  
+  assign(outName, bag)
+  save(list=outName, file = paste0("../output/", outName, ".RData"))
+  return(eval(as.name(paste(outName))))
+
+```
+
+
 
