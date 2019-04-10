@@ -1,0 +1,117 @@
+---
+title: "Error Detection Draft"
+output: html_document
+---
+
+
+```{r load library, warning=FALSE, message = FALSE}
+if (!require("devtools")) install.packages("devtools")
+if (!require("pacman")) {
+  ## devtools is required
+  library(devtools)
+  install_github("trinker/pacman")
+}
+
+pacman::p_load(knitr, readr, stringr, tesseract, vecsets)
+file_name_vec <- list.files("/Users/ShuangShuang/Documents/GitHub/Spring2019-Proj4-grp8-1/data/ground_truth") #100 files in total
+```
+
+```{r readin files}
+### only process one of the files in the folder as an example, in your project, you need to use all the files
+current_file_name <- sub(".txt","",file_name_vec[5])
+
+## read the ground truth text
+current_ground_truth_txt <- readLines(paste("/Users/ShuangShuang/Documents/GitHub/Spring2019-Proj4-grp8-1/data/ground_truth/",current_file_name,".txt",sep=""), warn=FALSE)
+
+## read the tesseract text
+current_tesseract_txt <- readLines(paste("/Users/ShuangShuang/Documents/GitHub/Spring2019-Proj4-grp8-1/data/tesseract/",current_file_name,".txt",sep=""), warn=FALSE)
+clean_tesseract_txt <- paste(current_tesseract_txt, collapse = " ")
+tesseract_vec <- str_split(clean_tesseract_txt," ")[[1]] #1124 tokens
+
+clean_ground_truth_txt <- paste(current_ground_truth_txt, collapse = " ")
+ground_truth_vec <- str_split(clean_ground_truth_txt," ")[[1]]
+
+```
+
+```{r}
+ground_truth_vec[1:10]
+tesseract_vec[1:10]
+
+#### clean: lower case, delete all puctuations ####
+```
+
+
+```{r}
+#define the array dim according to max nchar
+maxchar <- max(nchar(ground_truth_vec))
+dic <- array(NA, dim = c(36, 36, maxchar*(maxchar-1)/2, maxchar))
+
+#define 36*36 matrix as list
+l <-  as.list(c(1:36))
+names(l) <- c(letters, c(0:9))
+l[1:5]
+l[31:36]
+```
+
+```{r}
+#test
+truth <- ground_truth_vec[22:27]
+ocrvec <- tesseract_vec[22:27]
+truth
+ocrvec
+```
+
+```{r}
+#Create positional binary n-grams
+for(word in truth){
+  len <- nchar(word)
+  count = 1
+  for(i in c(1 : (len-1) )){
+    row = l[[substr(word,i,i)]]
+    for(j in c( (i+1) : len )){
+      col = l[[substr(word,j,j)]]
+      #print(paste(row, col, count, len))
+      dic[row, col, count, len] = 1
+      count = count+1
+    }
+  }
+}
+```
+
+
+```{r}
+#error detection
+error <- character()
+for(word in ocrvec){
+  stop = F
+  len <- nchar(word)
+  count = 0
+  
+  for(i in c(1 : (len-1) )){
+    if(stop){break}
+    row = l[[substr(word,i,i)]]
+    
+    for(j in c( (i+1) : len )){
+      col = l[[substr(word,j,j)]]
+      count = count+1
+      
+      if(is.na( dic[row, col, count, len]) ){
+        #print(c(row, col, count, len))
+        error <- c(error, word)
+        stop = T
+        break
+      }
+    }
+  }
+}
+
+error
+```
+
+
+
+
+
+
+
+
