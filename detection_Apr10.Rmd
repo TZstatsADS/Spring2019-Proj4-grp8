@@ -49,7 +49,7 @@ n = length(ground_truth) # number of files
 
 Truth_Extract = function(filenames){
 
-  #filenames <- ground_truth[1:5]  # for debugging
+  filenames <- ground_truth  # for debugging
   
   text = ""
   for (file in filenames){
@@ -60,7 +60,7 @@ Truth_Extract = function(filenames){
                   )
   }
   
-  #text = "applied data science is challenging.!sfsfas 09073 \\W"
+  #text = "app lied data science is challenging.!sfsfas 09073 \\W"
   text<-gsub("[[:punct:]]", " ", text)
   text = iconv(text, from = 'UTF-8', to = 'ASCII//TRANSLIT')
   word = strsplit(text," ")[[1]]
@@ -72,7 +72,10 @@ Truth_Extract = function(filenames){
     tm_map(removeWords, character(0))%>%
     tm_map(removeNumbers)%>%
     tm_map(removePunctuation)
+  
+writeLines(as.character(corpus[[30]]))
 
+  
   truth_words = tidy(corpus) %>%
     select(text) %>%
     unnest_tokens(dictionary, text)
@@ -159,6 +162,10 @@ Digrams = function(dictionary){
 
 #save(dic_digrams, file = paste0(project_path,"/output/digrams.Rdata"))
 
+write_csv(as.data.frame(dictionary), path = paste0(project_path,"/output/dictionary.csv"))
+
+head(as.data.frame(dictionary))
+mode(dictionary)
 ```
 
 

@@ -1,0 +1,194 @@
+---
+title: "Topic Modelling"
+author: "Hui Chiang"
+date: "10/04/2019"
+output: html_document
+---
+```{r Set-up}
+library(tm)
+library(topicmodels)
+library(data.table)
+library(tidyverse)
+library(tidytext)
+
+project_path = "~/Desktop/GR5243 Applied Data Science/Project 4/Spring2019-Proj4-grp8-1"
+true_path = "/data/ground_truth/"
+ground_truth = list.files(path=paste0(project_path,true_path), pattern="*.txt", full.names=TRUE, recursive=FALSE)
+
+#Create corpus for topic modelling
+#docs<- Corpus(DirSource(directory = "../data/ground_truth/."))
+docs<- Corpus(DirSource(directory = paste0(project_path,true_path)))
+
+```
+
+
+
+
+```{r Preprocessing}
+#Preprocessing
+#Transform to lower case
+docs <-tm_map(docs,content_transformer(tolower))
+
+#Remove symbols
+toSpace <- content_transformer(function(x, pattern) { return (gsub(pattern, " " , x))})
+docs <- tm_map(docs, toSpace, '-')
+docs <- tm_map(docs, toSpace, '’')
+sdocs <- tm_map(docs, toSpace, '‘')
+docs <- tm_map(docs, toSpace, '•')
+docs <- tm_map(docs, toSpace, '”')
+docs <- tm_map(docs, toSpace, '“')
+docs <- tm_map(docs, toSpace, 'â')
+docs <- tm_map(docs, toSpace, '€')
+docs <- tm_map(docs, toSpace, '¢')
+docs <- tm_map(docs, toSpace, '™')
+
+#Remove punctuation
+docs <- tm_map(docs, removePunctuation)
+
+#Strip digits
+docs <- tm_map(docs, removeNumbers)
+
+#Remove stopwords
+#docs <- tm_map(docs, removeWords, stopwords('english'))
+
+#Remove whitespace
+docs <- tm_map(docs, stripWhitespace)
+
+#Check document
+writeLines(as.character(docs[[30]]))
+
+#Stem document
+#docs <- tm_map(docs,stemDocument)
+
+#Inspect a document as a check
+writeLines(as.character(docs[[30]]))
+```
+
+```{r version 1}
+
+#load(paste0(project_path,"/output/GroundTruthWords.Rdata"))
+docs = VCorpus(VectorSource(dictionary))
+
+#Create document-term matrix
+dtm <- DocumentTermMatrix(docs)
+
+#Collapse matrix by summing over columns
+freq <- colSums(as.matrix(dtm))
+
+#Create sort order (descending)
+ord <- order(freq,decreasing=TRUE)
+
+
+
+#Set Gibbs Sampler parameters
+burnin <- 2000
+iter <- 1000
+thin <- 300
+seed <-list(1,2,3,4,5)
+nstart <- 5
+best <- TRUE
+k <- 30
+
+#Run LDA using Gibbs sampling
+raw.sum=apply(dtm,1,FUN=sum)
+dtm=dtm[raw.sum!=0,]
+ldaOut <-LDA(dtm,k, method='Gibbs', control=list(nstart=nstart, seed = seed, best=best, burnin = burnin, iter = iter, thin=thin))
+
+#Docs to topics
+ldaOut.topics <- as.matrix(topics(ldaOut))
+#write.csv(ldaOut.topics,file='/Users/tayhuichiang94/Desktop/columbia stuff/applied data science/ADS_ht2490/Spring2019-Proj2-grp10/doc/DocsToTopics_12.csv')
+          
+#Top 10 terms in each topic
+ldaOut.terms <- as.matrix(terms(ldaOut,10))
+#write.csv(ldaOut.terms,'/Users/tayhuichiang94/Desktop/columbia stuff/applied data science/ADS_ht2490/Spring2019-Proj2-grp10/doc/TopicsToTerms_12.csv')
+
+#Probabilities associated with each topic assignment
+topicProbabilities <- as.data.frame(ldaOut@gamma)
+#write.csv(topicProbabilities,'/Users/tayhuichiang94/Desktop/columbia stuff/applied data science/ADS_ht2490/Spring2019-Proj2-grp10/doc/TopicProbabilities_12.csv')
+
+#Word probabilities given topic
+wordProbabilities <- ldaOut %>%
+          tidy(matrix='beta') %>%
+          group_by(topic) %>%
+          arrange(topic,-beta)
+```
+
+
+```{r version 2}
+
+dic_corpus = VCorpus(VectorSource(dictionary))
+dic_dtm = DocumentTermMatrix(dic_corpus)
+dic_rowTotals = apply(dic_dtm, 1, sum) 
+dic_dtm  = dic_dtm[dic_rowTotals> 0, ]
+
+dic_lda = LDA(dic_dtm, k = 30, control = list(seed = 2019))
+dic_topics = tidy(dic_lda, matrix = "beta")
+
+dic_top_words = dic_topics %>%
+  group_by(topic) %>%
+  top_n(10, beta) %>%
+  ungroup() %>%
+  arrange(topic, -beta)
+
+#top_words %>%
+ # mutate(term = reorder(term, beta)) %>%
+  #ggplot(aes(term, beta, fill = factor(topic))) +
+  #geom_col(show.legend = F) +
+  #facet_wrap(~ topic, scales = "free") +
+  #coord_flip()
+
+dic_top_words
+
+save(dic_top_words,file = paste0(project_path,"/output/dic_top_words.Rdata"))
+load(paste0(project_path,"/output/digrams.Rdata"))
+
+
+
+docs<- Corpus(DirSource(directory = paste0(project_path,true_path)))
+docs_dtm = DocumentTermMatrix(docs)
+docs_rowTotals = apply(docs_dtm, 1, sum) 
+docs_dtm  = docs_dtm[docs_rowTotals> 0, ]
+
+docs_lda = LDA(docs_dtm, k = 30, control = list(seed = 2019))
+docs_topics_word = tidy(docs_lda, matrix = "beta")  # words topics
+
+docs_top_words = docs_topics %>%
+  group_by(topic) %>%
+  top_n(10, beta) %>%
+  ungroup() %>%
+  arrange(topic, -beta)
+
+docs_top_words
+
+
+docs_topics_doc = tidy(docs_lda, matrix = "gamma")  # document topics
+filenames = docs_topics_doc$document
+tidy(docs_dtm) %>%
+  filter(document == filenames[1]) %>%
+  arrange(desc(count))
+
+```
+
+
+```{r version 3}
+
+topicModelling <- function(files){
+  
+  textInFiles <- lapply(files, function (filename) read.table(filename, sep="\t", stringsAsFactors = F))
+  textInFiles <- lapply(textInFiles, function(x) x$V1)
+  
+  a <- Corpus(VectorSource(textInFiles), readerControl = list(language="lat")) #specifies the exact folder where my text file(s) is for analysis with tm.
+  a <- tm_map(a, tolower)
+  a <- tm_map(a , stripWhitespace)
+  a <- tm_map(a, removeWords, stopwords("en"))
+  # warnings are not relevant: https://stackoverflow.com/questions/51081415/transformation-drops-documents-error-in-r
+  
+  adtm <- DocumentTermMatrix(a)
+  l <- LDA(adtm, k = 30, control = list(seed = 1234))
+  
+  save(l, file = "../output/LDA.RData")
+  return(l)
+}
+
+```
+
