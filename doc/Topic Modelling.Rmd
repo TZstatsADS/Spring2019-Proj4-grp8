@@ -11,13 +11,6 @@ library(data.table)
 library(tidyverse)
 library(tidytext)
 
-#Import file names
-list_of_files <- list.files(
-  path = "../data/ground_truth/.", 
-  recursive = TRUE,
-  pattern = "\\.txt$", 
-  full.names = TRUE)
-
 #Create corpus for topic modelling
 docs<- Corpus(DirSource(directory = "../data/ground_truth/."))
 ```
@@ -60,7 +53,9 @@ writeLines(as.character(docs[[30]]))
 
 #Inspect a document as a check
 writeLines(as.character(docs[[30]]))
+```
 
+```{r}
 #Create document-term matrix
 dtm <- DocumentTermMatrix(docs)
 
@@ -71,13 +66,13 @@ freq <- colSums(as.matrix(dtm))
 ord <- order(freq,decreasing=TRUE)
 
 #Set Gibbs Sampler parameters
-burnin <- 1000
-iter <- 600
-thin <- 100
-seed <-list(2003,5,63,100001,765)
+burnin <- 2000
+iter <- 1000
+thin <- 300
+seed <-list(1,2,3,4,5)
 nstart <- 5
 best <- TRUE
-k <- 5
+k <- 30
 
 #Run LDA using Gibbs sampling
 raw.sum=apply(dtm,1,FUN=sum)
@@ -96,10 +91,9 @@ ldaOut.terms <- as.matrix(terms(ldaOut,10))
 topicProbabilities <- as.data.frame(ldaOut@gamma)
 #write.csv(topicProbabilities,'/Users/tayhuichiang94/Desktop/columbia stuff/applied data science/ADS_ht2490/Spring2019-Proj2-grp10/doc/TopicProbabilities_12.csv')
 
-test <- tidy(ldaOut, matrix='beta')
-test2 <- test %>% 
-          group_by(topic) %>% 
-          top_n(10, beta) %>% 
-          ungroup() %>% 
-          arrange(topic, -beta)
+#Word probabilities given topic
+wordProbabilities <- ldaOut %>%
+          tidy(matrix='beta') %>%
+          group_by(topic) %>%
+          arrange(topic,-beta)
 ```
