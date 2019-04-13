@@ -81,19 +81,37 @@ path <- "/Users/tianchenwang/Git/Spring2019-Proj4-grp8/output/"
 # load detection ...
 load(paste0(path, "detection_ocr.Rdata"))
 
-candidate_word <- lapply(detection_ocr, function(x){
+incorect_word <- lapply(detection_ocr, function(x){
   x[,1][x[,2] == "1"]
 })
-length(candidate_word)
-candidate_word[1][[1]]
+length(incorect_word)
+incorect_word[1][[1]]
+# save candidate words 
+save(incorect_word, file = paste0(path, "incorrect_words.Rdata") )
 
-given_word <- "apple"
-# given a dic, 
+```
+
+here only consider sub.. depends on reacall we shall deicide if we need to use add and del.
+```{r}
+path <- "/Users/tianchenwang/Git/Spring2019-Proj4-grp8/output/"
+all_correct_words <- read_csv(paste0(path, "dictionary.csv"))
+all_correct_words$l <- sapply(all_correct_words$dictionary, str_length)
 
 set <- list(all = 2,
             sub = 2)
-# c is from the same length words
-agrep("apple", c("appre", "apply", "avxsa", "appple"), value = TRUE, max = set)
+# # c is from the same length words
+# agrep("apple", c("appre", "apply", "avxsa", "appple"), value = TRUE, max = set)
+# run THIS!!
+
+candidate_words <- lapply(incorect_word, function(x){
+  contianer <- list()
+  for(i in 1:length(x)){
+    dic <- all_correct_words[all_correct_words$l == str_length(x[i]), 1] 
+    contianer[[x[i]]] <- agrep(x[i], dic$dictionary, value = TRUE, max = set)
+  }
+  contianer
+})
+save(candidate_words, file = paste0(path, "candidate_words.Rdata") )
 ```
 
 
