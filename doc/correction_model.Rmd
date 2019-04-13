@@ -81,13 +81,19 @@ path <- "/Users/tianchenwang/Git/Spring2019-Proj4-grp8/output/"
 # load detection ...
 load(paste0(path, "detection_ocr.Rdata"))
 
+candidate_word <- lapply(detection_ocr, function(x){
+  x[,1][x[,2] == "1"]
+})
+length(candidate_word)
+candidate_word[1][[1]]
+
 given_word <- "apple"
 # given a dic, 
 
 set <- list(all = 2,
             sub = 2)
 # c is from the same length words
-agrep("apple", c("appre", "apply", "avxsa"), value = TRUE, max = set)
+agrep("apple", c("appre", "apply", "avxsa", "appple"), value = TRUE, max = set)
 ```
 
 
