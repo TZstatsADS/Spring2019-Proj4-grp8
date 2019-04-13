@@ -27,4 +27,84 @@ for(i in 1:length(groundtruth.name)){
   groundtruth.docs[i][[1]] <- read_file(paste0(path, groundtruth.name[i]))
 }
 
+# get tidy tibble data.
+ground_truth <- NULL
+for(i in 1:length(groundtruth.docs)){
+  # tem <- tibble(text = str_split(groundtruth.docs[i][[1]], "\n")[[1]], docid = i)
+  tem <- tibble(text = gsub("\n", " ", groundtruth.docs[i][[1]])[[1]], docid = i)
+  ground_truth <- rbind(ground_truth, tem)
+}
+
+# token
+ground_truth_tokenized <- ground_truth %>%
+  group_by(docid) %>%
+  # mutate(linenumber = row_number()) %>%
+  ungroup() %>%
+  unnest_tokens(word, text)
+
+ground_truth_tokenized <- ground_truth_tokenized %>%
+  count(docid, word, sort = TRUE)
+
+ground_truth_dtm <- ground_truth_tokenized %>%
+  cast_dtm(docid, word, n)
 ```
+
+```{r}
+K <- 30
+control_list <- list(
+  seed = list(1,2,3,4,5),
+  nstart = 5,
+  best = TRUE,
+  burnin = 1000,
+  iter = 600,
+  thin = 100
+)
+
+gd_LDA <- LDA(ground_truth_dtm, K, method = "Gibbs", control = control_list)
+
+word_prob <- gd_LDA %>%
+  tidy(matrix = "beta") %>%
+  arrange(topic, beta)
+  
+word_prob %>%
+  group_by(topic) %>%
+  top_n(5, beta) %>%
+  ungroup() %>%
+  arrange(topic, -beta)
+
+path <- "/Users/tianchenwang/Git/Spring2019-Proj4-grp8/output/gd_LDA.Rdata"
+save(gd_LDA, file =path)
+```
+candidate word list
+```{r}
+path <- "/Users/tianchenwang/Git/Spring2019-Proj4-grp8/output/"
+# load detection ...
+load(paste0(path, "detection_ocr.Rdata"))
+
+given_word <- "apple"
+# given a dic, 
+
+set <- list(all = 2,
+            sub = 2)
+# c is from the same length words
+agrep("apple", c("appre", "apply", "avxsa"), value = TRUE, max = set)
+```
+
+
+matrix stuff
+```{r}
+path <- "/Users/tianchenwang/Git/Spring2019-Proj4-grp8/data/confusion_matrix/"
+add_matrix <- read_csv(paste0(path, "add_matrix.csv"))
+del_matrix <- read_csv(paste0(path, "del_matrix.csv"))
+rev_matrix <- read_csv(paste0(path, "rev_matrix.csv"))
+sub_matrix <- read_csv(paste0(path, "sub_matrix.csv"))
+
+
+add_matrix
+```
+
+input from detaction
+```{r}
+
+```
+
