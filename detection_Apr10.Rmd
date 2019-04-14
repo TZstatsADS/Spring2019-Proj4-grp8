@@ -281,7 +281,7 @@ iconv(astr, from = 'UTF-8', to = 'ASCII//TRANSLIT')
 ```
 
 
-```{r OCR_Extract version 2}
+```{r OCR_Extract version 2 Apr14}
 OCR_Extract <- function(filename){   # for extract single ocr .txt only 
 
   #filename = OCR[1]  # for debugging
@@ -323,7 +323,7 @@ OCR_Extract <- function(filename){   # for extract single ocr .txt only
 ```
 
 
-```{r Extract OCR version 4}
+```{r Extract OCR version 4 Apr14}
 load(paste0(project_path,"/output/digrams.Rdata"))
 
 Detection = function(filenames, digrams){
