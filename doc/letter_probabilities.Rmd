@@ -1,0 +1,69 @@
+---
+title: "letter_probabilities"
+author: "Hui Chiang"
+date: "13/04/2019"
+output: html_document
+---
+```{r}
+#Import the hashmap of incorrect words and candidates
+load("/Users/tayhuichiang94/Desktop/columbia stuff/applied data science/ADS_ht2490/Spring2019-Proj4-grp8-1/output/candidate_words.Rdata")
+
+#Import the list of correct and incorrect words
+load("/Users/tayhuichiang94/Desktop/columbia stuff/applied data science/ADS_ht2490/Spring2019-Proj4-grp8-1/output/detection_ocr.Rdata")
+
+#Import confusion matrix for substituting letters
+sub_df <- read.csv('/Users/tayhuichiang94/Desktop/columbia stuff/applied data science/ADS_ht2490/Spring2019-Proj4-grp8-1/data/confusion_matrix/sub_matrix.csv', header = TRUE, row.names=1)
+```
+
+```{r}
+corrected_list <- detection_ocr
+
+#Loop through all the words in detection_ocr and add the corrected words
+for (i in 1:100){
+  for (j in 1:length(detection_ocr[[i]][,1])){
+    #Current word
+    current <- detection_ocr[[i]][j,1]
+    #Only change the incorrect words
+    if (detection_ocr[[i]][j,2]=="1"){
+      #Only change if candidate words exist
+      if (length(candidate_words[[i]][[current]]) != 0){
+        #Scores of each candidate word
+        scores <- rep(1,length(candidate_words[[i]][[current]]))
+        
+                  
+        #ADD PROBABILITY OF WORD HERE INSTEAD OF * 1
+        scores[k] <- scores[k] * 1
+          
+        #Loop through candidate words
+        for (k in 1:length(candidate_words[[i]][[current]])){
+          candidate <- candidate_words[[i]][[current]][k]
+          #Loop through each letter of the candidate
+          for (l in 1:length(strsplit(candidate_words[[i]][[current]],"")[[1]]))           {
+            #Compare detected word and candidate word letter by letter
+            if(strsplit(current,"")[[1]][l] !=
+              strsplit(candidate_words[[i]][[current]][k],"")[[1]][l]){
+              #Multiply score of candidate by letter probability
+              scores[k] <- scores[k] * 
+                sub_df[strsplit(current,"")[[1]][l],
+                       strsplit(candidate_words[[i]][[current]][k],"")[[1]][l]]/
+                sum(sub_df[,       
+                      strsplit(candidate_words[[i]][[current]][k],"")[[1]][l]])
+            }
+          }
+        }
+        #Use word with maximum probability if there is a winner
+        if (length(which(scores==max(scores))) == 1){
+          selected <- which(scores==max(scores))
+          corrected_list[[i]][j,1] <- candidate_words[[i]][[current]][selected]
+        }
+        #Randomly select a winner if there is a tie
+        if (length(which(scores==max(scores))) > 1){
+          selected <- sample(which(scores == max(scores)),1)
+          corrected_list[[i]][j,1] <- candidate_words[[i]][[current]][selected]
+        }
+      }
+    }
+    
+  }
+}
+```
