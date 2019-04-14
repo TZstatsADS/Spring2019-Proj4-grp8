@@ -1,0 +1,124 @@
+---
+title: "Performance measure"
+output: html_notebook
+---
+
+}
+
+
+```{r file path}
+if (!require("devtools")) install.packages("devtools")
+if (!require("pacman")) {
+  ## devtools is required
+  library(devtools)
+  install_github("trinker/pacman")
+}
+
+pacman::p_load(knitr, readr, stringr, tesseract, vecsets)
+library(tm)
+library(tidytext)
+library(dplyr)
+
+
+
+project_path = "~/Desktop/GR5243 Applied Data Science/Project 4/Spring2019-Proj4-grp8-1"
+true_path = "/data/ground_truth/"
+OCR_path = "/data/tesseract/"
+
+ground_truth = list.files(path=paste0(project_path,true_path), pattern="*.txt", full.names=TRUE, recursive=FALSE)
+OCR = list.files(path=paste0(project_path,OCR_path), pattern="*.txt", full.names=TRUE, recursive=FALSE)
+
+
+n = length(ground_truth) # number of files
+head(ground_truth)
+
+```
+
+
+```{r txt_Extract}
+txt_Extract = function(filenames){
+
+  #filenames <- ground_truth[5]  # for debugging
+  #filenames <- OCR[5]  # for debugging
+  
+  text = ""
+  for (file in filenames){
+    file = filenames[1]
+    text_lines = readLines(file)
+    text = paste(text, 
+                  paste(text_lines, collapse = " ")
+                  )
+  }
+  
+  #ground_truth_vec <- str_split(text," ")[[1]] #1078
+  #tesseract_vec <- str_split(text," ")[[1]] #1078
+  #old_intersect_vec <- vecsets::vintersect(tolower(ground_truth_vec), tolower(tesseract_vec)) #607
+  #length(old_intersect_vec)/length(ground_truth_vec)
+
+
+  #text = "app lied data science is challenging.!sfsfas 09073 \\W"
+  text<-gsub("[[:punct:]]", " ", text)
+  text = iconv(text, from = 'UTF-8', to = 'ASCII//TRANSLIT')
+  word = strsplit(text," ")[[1]]
+  words = word[word!=""]
+
+  corpus = VCorpus(VectorSource(words))%>%
+    tm_map(stripWhitespace)%>%
+    tm_map(content_transformer(tolower))%>%
+    tm_map(removeWords, character(0))%>%
+    tm_map(removeNumbers)%>%
+    tm_map(removePunctuation)
+  
+  truth_words = tidy(corpus) %>%
+    select(text) %>%
+    unnest_tokens(dictionary, text)
+    
+  
+  #truth_words = unique(truth_words)
+  words = as.matrix(truth_words)
+  #truth_words = truth_words[nchar(truth_words) > 1] # no single character words
+  #truth_words = truth_words[truth_words!=""]
+
+  #check_punct = grep("[[:punct:]]", truth_words)
+  #check_num = grep("[0-9]", truth_words)
+  #check_punct
+  #check_num
+
+  
+  return(words)
+}
+```
+
+```{r word level}
+ground_truth_vec = txt_Extract(ground_truth)
+save(ground_truth_vec, file = paste0(project_path,"/output/GroundTruthTxt.Rdata"))
+tesseract_vec = txt_Extract(OCR)
+save(tesseract_vec, file = paste0(project_path,"/output/TesseractTxt.Rdata"))
+
+old_intersect_vec <- vecsets::vintersect(tolower(ground_truth_vec), 
+                                         tolower(tesseract_vec)) 
+
+### Waiting for correction output
+new_intersect_vec <- vecsets::vintersect(tolower(ground_truth_vec),
+                                         tolower(tesseract_delete_error_vec))
+
+OCR_performance_table <- data.frame("Tesseract" = rep(NA,4),
+                                    "Tesseract_with_postprocessing" = rep(NA,4))
+row.names(OCR_performance_table) <- c("word_wise_recall","word_wise_precision",
+                                      "character_wise_recall","character_wise_precision")
+OCR_performance_table["word_wise_recall","Tesseract"] <- length(old_intersect_vec)/length(ground_truth_vec)
+OCR_performance_table["word_wise_precision","Tesseract"] <- length(old_intersect_vec)/length(tesseract_vec)
+OCR_performance_table["word_wise_recall","Tesseract_with_postprocessing"] <- length(new_intersect_vec)/length(ground_truth_vec)
+OCR_performance_table["word_wise_precision","Tesseract_with_postprocessing"] <- length(new_intersect_vec)/length(tesseract_delete_error_vec)
+kable(OCR_performance_table, caption="Summary of OCR performance")
+```
+
+```{r character level}
+
+
+
+
+
+
+```
+

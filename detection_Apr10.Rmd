@@ -32,24 +32,13 @@ OCR = list.files(path=paste0(project_path,OCR_path), pattern="*.txt", full.names
 
 n = length(ground_truth) # number of files
 
-# select train + validation and testing data 80% and 20%
-#set.seed(2019)
-#train = sample(1:n, size = 0.7*n, replace = F)
-
-# set training data
-#truthTrain = ground_truth[train]
-#ocrTrain = OCR[train]
-
-# set testing data
-#truthTest = ground_truth[-train]
-#ocrTest = OCR[-train]
 ```
 
 ```{r Extract Ground Truth}
 
 Truth_Extract = function(filenames){
 
-  filenames <- ground_truth  # for debugging
+  #filenames <- ground_truth  # for debugging
   
   text = ""
   for (file in filenames){
@@ -61,7 +50,7 @@ Truth_Extract = function(filenames){
   }
   
   #text = "app lied data science is challenging.!sfsfas 09073 \\W"
-  text<-gsub("[[:punct:]]", " ", text)
+  #text<-gsub("[[:punct:]]", " ", text)
   text = iconv(text, from = 'UTF-8', to = 'ASCII//TRANSLIT')
   word = strsplit(text," ")[[1]]
   words = word[word!=""]
@@ -72,8 +61,6 @@ Truth_Extract = function(filenames){
     tm_map(removeWords, character(0))%>%
     tm_map(removeNumbers)%>%
     tm_map(removePunctuation)
-  
-writeLines(as.character(corpus[[30]]))
 
   
   truth_words = tidy(corpus) %>%
@@ -294,4 +281,145 @@ iconv(astr, from = 'UTF-8', to = 'ASCII//TRANSLIT')
 ```
 
 
+```{r OCR_Extract version 2}
+OCR_Extract <- function(filename){   # for extract single ocr .txt only 
+
+  #filename = OCR[1]  # for debugging
+
+  #text = paste(readLines(filename), collapse = " ")
+  text = readLines(filename)
+  #text<-gsub("[[:punct:]]", " ", text)
+  text = iconv(text, from = 'UTF-8', to = 'ASCII//TRANSLIT')
+  
+  word = strsplit(text," ")
+  lines = word[word!=""]
+  
+  cleaned_doc = list()
+  
+  for (line in 1:length(lines)){
+    #line = 1
+    uncleaned = lines[[line]]
+    
+    corpus = VCorpus(VectorSource(uncleaned))%>%
+      tm_map(stripWhitespace)%>%
+      tm_map(content_transformer(tolower))%>%
+      tm_map(removeNumbers)%>%
+      tm_map(removePunctuation)
+
+    cleaned = tidy(corpus) %>%
+      select(text) %>%
+      unnest_tokens(dictionary, text)
+
+    cleaned = as.matrix(cleaned)
+    cleaned = cleaned[nchar(cleaned) > 1] # no single character words
+    cleaned = cleaned[nchar(cleaned) <= 24] # no words longer than the longest word in     ground truth
+
+    cleaned_doc[[line]] = cleaned
+    
+  }
+
+  return(cleaned_doc)
+}
+```
+
+
+```{r Extract OCR version 4}
+load(paste0(project_path,"/output/digrams.Rdata"))
+
+Detection = function(filenames, digrams){
+  
+  Detection_list = list()
+  filenames = OCR[1:3]   # for debugging
+  #filenames = OCR  # for debugging
+  #digrams = dic_digrams  # for debugging
+
+  for (f in 1:length(filenames)){
+    
+    #f = 25  # for debugging
+    doc_list = list()
+    
+    doc = OCR_Extract(filename = filenames[f])
+    L = length(doc)  # number of lines in current document
+    
+    for (l in 1:L){  # counting lines in current document
+      
+      #l = 1   # for debugging
+      nwords = length(doc[[l]]) # number of words in current line
+      if (nwords == 0) next  # no words in current line
+      
+      error_det = matrix(NA, nrow = nwords, ncol = 2)
+      error_det[,1] = doc[[l]]  # fill in exact words
+      error_det[,2] = 0  # initial values, in character mode
+      
+      #######  Start detection  ######
+      
+      for (w in 1:nwords){
+        
+        count_pair = 1
+        stop = F
+        word = error_det[w,1]
+        n = nchar(word)
+      
+        for (i in 1:(n-1)){
+          
+          if (stop) break # stop looping current word (i loop)
+        
+          for(j in 2:n){
+          
+            if (i<j){
+            
+                row_index = match(substr(word, i, i),letters)
+                col_index = match(substr(word, j, j),letters)
+
+                if(dic_digrams[[n]][[count_pair]][row_index,col_index] == 0){
+                  error_det[w,2] = 1
+                  stop = T
+                  break  # stop j loop
+                }
+              
+                count_pair = count_pair + 1
+
+            }
+          
+         }
+    
+        }
+        
+      }
+      #######  End detection  ######
+      
+      doc_list[[l]] = error_det
+
+    }
+
+    cat("OCR",f,"Done! \n")
+    Detection_list[[f]] = doc_list
+  }
+  
+  return(Detection_list)
+  
+  #length(Detection_list[[1]])
+  #Detection_list[[1]][[47]]
+  #Detection_list[[1]][[44]]
+  
+}
+
+
+
+#detection_ocr = Detection(OCR, digrams = dic_digrams)
+
+#save(detection_ocr, file = paste0(project_path,"/output/detection_ocr.Rdata"))
+
+load(paste0(project_path,"/output/detection_ocr.Rdata"))
+# Check
+length(detection_ocr)
+head(detection_ocr[[1]],20)
+tail(detection_ocr[[70]],20)
+
+###### debug ######
+astr <- "Ábcdêãçoàúü"
+astr = c("lmageﬁaulldlng","avsfeåååååå")
+iconv(astr, from = 'UTF-8', to = 'ASCII//TRANSLIT')
+
+```
 
