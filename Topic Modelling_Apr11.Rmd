@@ -55,19 +55,19 @@ docs <- tm_map(docs, removeNumbers)
 docs <- tm_map(docs, stripWhitespace)
 
 #Check document
-writeLines(as.character(docs[[30]]))
+#writeLines(as.character(docs[[30]]))
 
 #Stem document
 #docs <- tm_map(docs,stemDocument)
 
 #Inspect a document as a check
-writeLines(as.character(docs[[30]]))
+#writeLines(as.character(docs[[30]]))
 ```
 
 ```{r version 1}
 
 #load(paste0(project_path,"/output/GroundTruthWords.Rdata"))
-docs = VCorpus(VectorSource(dictionary))
+#docs = VCorpus(VectorSource(dictionary))
 
 #Create document-term matrix
 dtm <- DocumentTermMatrix(docs)
@@ -81,10 +81,11 @@ ord <- order(freq,decreasing=TRUE)
 
 
 #Set Gibbs Sampler parameters
-burnin <- 2000
-iter <- 1000
-thin <- 300
-seed <-list(1,2,3,4,5)
+burnin <- 1000  
+iter <- 2000
+thin <- 500 
+#seed <-list(1,2,3,4,5)
+seed <-list(2003,5,63,100001,765)
 nstart <- 5
 best <- TRUE
 k <- 30
@@ -96,10 +97,12 @@ ldaOut <-LDA(dtm,k, method='Gibbs', control=list(nstart=nstart, seed = seed, bes
 
 #Docs to topics
 ldaOut.topics <- as.matrix(topics(ldaOut))
+
 #write.csv(ldaOut.topics,file='/Users/tayhuichiang94/Desktop/columbia stuff/applied data science/ADS_ht2490/Spring2019-Proj2-grp10/doc/DocsToTopics_12.csv')
           
 #Top 10 terms in each topic
 ldaOut.terms <- as.matrix(terms(ldaOut,10))
+
 #write.csv(ldaOut.terms,'/Users/tayhuichiang94/Desktop/columbia stuff/applied data science/ADS_ht2490/Spring2019-Proj2-grp10/doc/TopicsToTerms_12.csv')
 
 #Probabilities associated with each topic assignment
@@ -111,6 +114,27 @@ wordProbabilities <- ldaOut %>%
           tidy(matrix='beta') %>%
           group_by(topic) %>%
           arrange(topic,-beta)
+
+ver1_topics = tidy(ldaOut, matrix = "beta")
+ver1_top_words = ver1_topics %>%
+  group_by(topic) %>%
+  top_n(10, beta) %>%
+  ungroup() %>%
+  arrange(topic, -beta)
+
+
+#ldaOut_2 = ldaOut
+#wordProbabilities_1 = wordProbabilities
+
+#save(wordProbabilities_1, file = paste0(project_path,"/output/wordPro_1.Rdata"))
+#save(ldaOut_2, file = paste0(project_path,"/output/lda_2.Rdata"))
+
+load(paste0(project_path,"/output/lda_1.Rdata"))
+load(paste0(project_path,"/output/lda_2.Rdata"))
+ldaOut.terms_1 <- as.matrix(terms(ldaOut_1,10))
+ldaOut.terms_2 <- as.matrix(terms(ldaOut_2,10))
+
+
 ```
 
 
@@ -121,8 +145,12 @@ dic_dtm = DocumentTermMatrix(dic_corpus)
 dic_rowTotals = apply(dic_dtm, 1, sum) 
 dic_dtm  = dic_dtm[dic_rowTotals> 0, ]
 
-dic_lda = LDA(dic_dtm, k = 30, control = list(seed = 2019))
+dic_lda = LDA(dic_dtm, k = 30, control = list(seed = 2019)) ####
+
+
+
 dic_topics = tidy(dic_lda, matrix = "beta")
+
 
 dic_top_words = dic_topics %>%
   group_by(topic) %>%
@@ -137,9 +165,12 @@ dic_top_words = dic_topics %>%
   #facet_wrap(~ topic, scales = "free") +
   #coord_flip()
 
-dic_top_words
+dic_
+top_words
 
 save(dic_top_words,file = paste0(project_path,"/output/dic_top_words.Rdata"))
+load(paste0(project_path,"/output/dic_top_words.Rdata"))
+
 load(paste0(project_path,"/output/digrams.Rdata"))
 
 
@@ -149,7 +180,9 @@ docs_dtm = DocumentTermMatrix(docs)
 docs_rowTotals = apply(docs_dtm, 1, sum) 
 docs_dtm  = docs_dtm[docs_rowTotals> 0, ]
 
-docs_lda = LDA(docs_dtm, k = 30, control = list(seed = 2019))
+docs_lda = LDA(docs_dtm, k = 30, control = list(seed = 2019))#####
+ldaOut.terms_docs <- as.matrix(terms(docs_lda,10))
+
 docs_topics_word = tidy(docs_lda, matrix = "beta")  # words topics
 
 docs_top_words = docs_topics %>%
