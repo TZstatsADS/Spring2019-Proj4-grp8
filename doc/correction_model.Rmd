@@ -114,21 +114,63 @@ candidate_words <- lapply(incorect_word, function(x){
 save(candidate_words, file = paste0(path, "candidate_words.Rdata") )
 ```
 
-
 matrix stuff
 ```{r}
 path <- "/Users/tianchenwang/Git/Spring2019-Proj4-grp8/data/confusion_matrix/"
-add_matrix <- read_csv(paste0(path, "add_matrix.csv"))
-del_matrix <- read_csv(paste0(path, "del_matrix.csv"))
-rev_matrix <- read_csv(paste0(path, "rev_matrix.csv"))
-sub_matrix <- read_csv(paste0(path, "sub_matrix.csv"))
+# add_matrix <- read_csv(paste0(path, "add_matrix.csv"))
+# del_matrix <- read_csv(paste0(path, "del_matrix.csv"))
+# rev_matrix <- read_csv(paste0(path, "rev_matrix.csv"))
+sub_matrix <- read.csv(paste0(path, "sub_matrix.csv"), row.names = 1)
 
+sub_matrix
+# get probability sub_matrix
+sub_probmatrix <- t(t(sub_matrix) / apply(sub_matrix, 2, sum))
 
-add_matrix
 ```
 
-input from detaction
+input from incorrect words, and give score for each candidate words.
 ```{r}
+# iterate over docs, i is the i-th doc
+# save corrected word with respect to the wrong word
+lda_model <- gd_LDA
+corrected_word <- list()
+for(i in 1:length(incorect_word)){
+  corrected_word[[i]] = list()
+  # doc position in lda model
+  doc_pos <- which(lda_model@documents == as.character(i))
+  # topic prob for the doc
+  topic_prob <- lda_model@gamma[doc_pos, ]
+  for (current in incorect_word[[i]]) {
+    
+    candidates <- candidate_words[[i]][[current]]
+    if(length(candidates) > 0){
+      # get current incorrect word letters 
+      current_letters <- str_split(current, "")[[1]]
+      
+      # given topics word probability
+      scores <- sapply(candidates, function(x){
+        col_id <- which(lda_model@terms == x)
+        sum(lda_model@beta[,col_id] * topic_prob)
+      })
+      # compute letter probs
+      letter_probs <- sapply(candidates, function(x){
+        candidate_letters <- str_split(x, "")[[1]]
+        temp <- 1
+        for (k in 1:length(candidate_letters)){
+          temp <- temp*sub_probmatrix[candidate_letters[k],current_letters[k]] 
+        }
+        temp
+      })
+      # update final score 
+      scores <- scores * letter_probs
+      
+      # return the highest score candidate for the incorrect current
+      correct <- candidates[sample(which(scores == max(scores)), 1)]
+      corrected_word[[i]][[current]] <- correct
+    }
+    #
+  }
+}
 
 ```
 
