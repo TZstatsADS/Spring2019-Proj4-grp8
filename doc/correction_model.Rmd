@@ -122,10 +122,8 @@ path <- "/Users/tianchenwang/Git/Spring2019-Proj4-grp8/data/confusion_matrix/"
 # rev_matrix <- read_csv(paste0(path, "rev_matrix.csv"))
 sub_matrix <- read.csv(paste0(path, "sub_matrix.csv"), row.names = 1)
 
-sub_matrix
 # get probability sub_matrix
 sub_probmatrix <- t(t(sub_matrix) / apply(sub_matrix, 2, sum))
-
 ```
 
 input from incorrect words, and give score for each candidate words.
@@ -171,6 +169,11 @@ for(i in 1:length(incorect_word)){
     #
   }
 }
-
+path = "/Users/tianchenwang/Git/Spring2019-Proj4-grp8/output/"
+save(corrected_word, file = paste0(path, "corrected_word.Rdata"))
 ```
-
+  
+precision and recall
+```{r}
+corrected_word[[1]]
+```
