@@ -1,0 +1,176 @@
+---
+title: "Performance_Measure"
+auther: "Shuang Lu"
+date: "2019/4/14"
+output: html_document
+---
+
+```{r}
+library(tm)
+```
+
+```{r}
+#performance table
+OCR_performance_table <- data.frame("Tesseract" = rep(NA,4),
+                                    "Tesseract_with_postprocessing" = rep(NA,4))
+row.names(OCR_performance_table) <- c("word_wise_recall","word_wise_precision",
+                                      "character_wise_recall","character_wise_precision")
+
+OCR_performance_table
+```
+
+
+```{r}
+#### word level ###
+
+file_name_vec <- list.files("/Users/ShuangShuang/Documents/GitHub/Spring2019-Proj4-grp8-1/data/ground_truth")
+len <- length(file_name_vec)
+
+word_recall_before <- numeric(len)
+word_pres_before <- numeric(len)
+word_recall_post <- numeric(len)
+word_pres_post <- numeric(len)
+
+for(i in 1:len){
+  current_file_name <- sub(".txt","",file_name_vec[i])
+  
+  current_ground_truth_txt <- readLines(paste("/Users/ShuangShuang/Documents/GitHub/Spring2019-Proj4-grp8-1/data/ground_truth/",current_file_name,".txt",sep=""), warn=FALSE)
+  
+  current_tesseract_txt <- readLines(paste("/Users/ShuangShuang/Documents/GitHub/Spring2019-Proj4-grp8-1/data/tesseract/",current_file_name,".txt",sep=""), warn=FALSE)
+  
+  ground_truth_vec <- str_split(paste(current_ground_truth_txt, collapse = " ")," ")[[1]]
+  tesseract_vec <- str_split(paste(current_tesseract_txt, collapse = " ")," ")[[1]]
+  
+  #TODO: tesseract_post_vec
+  
+  old_intersect_vec<- vecsets::vintersect(tolower(ground_truth_vec), tolower(tesseract_vec))
+  #new_intersect_vec <- vecsets::vintersect(tolower(ground_truth_vec), tolower(tesseract_post_vec))
+  
+  word_recall_before[i] <- length(old_intersect_vec)/length(ground_truth_vec)
+  word_pres_before[i] <- length(old_intersect_vec)/length(tesseract_vec)
+  #word_recall_post[i] <- length(new_intersect_vec)/length(ground_truth_vec)
+  #word_pres_post[i] <- length(new_intersect_vec)/length(tesseract_post_vec)
+}
+
+
+OCR_performance_table["word_wise_recall","Tesseract"] <- mean(word_recall_before)
+
+OCR_performance_table["word_wise_precision","Tesseract"] <- mean(word_pres_before)
+
+#OCR_performance_table["word_wise_recall","Tesseract_with_postprocessing"] <- mean(word_recall_post)
+
+#OCR_performance_table["word_wise_precision","Tesseract_with_postprocessing"] <- mean(word_pres_post)
+
+```
+
+
+
+```{r}
+### Character level###
+#Find intersection words between two texts, then divide texts into smaller sting segments by intersection words. Usung 'adist' function to find number of error chars between two strings.
+
+
+#helper functions
+
+#function to divide text into smaller strings between each unique intersection word
+divide_string <- function(vec, intersect_vec){
+  position <- c(0,which(vec %in% intersect_vec), length(vec))
+  string_list = list()
+  for(i in 1:(length(position)-1)){
+    str = character(0)
+    if(position[i+1] - position[i] > 1 ) {
+      for(j in (position[i]+1) : (position[i+1]-1)){
+        str = c(str, vec[j])
+      } 
+     }
+
+  string_list[[i]] = str
+  }
+  return(string_list)
+}
+
+# function to input two lists of strings, count number of error characters
+count_error_char <- function(list1, list2){
+  if(length(list1) == length(list2)){
+    no_of_error <- 0
+    for(i in 1:length(list1)){
+      no_of_error <- no_of_error + sum(diag(adist(list1[[i]], list2[[i]])))
+    }
+  }
+  else{ no_of_error <- NA }
+  
+  return(no_of_error)
+}
+
+```
+
+```{r}
+char_recall_before <- numeric(len)
+char_pres_before <- numeric(len)
+char_recall_post <- numeric(len)
+char_pres_post <- numeric(len)
+
+for(i in 1:len){
+  current_file_name <- sub(".txt","",file_name_vec[i])
+  
+  current_ground_truth_txt <- readLines(paste("/Users/ShuangShuang/Documents/GitHub/Spring2019-Proj4-grp8-1/data/ground_truth/",current_file_name,".txt",sep=""), warn=FALSE)
+  
+  current_tesseract_txt <- readLines(paste("/Users/ShuangShuang/Documents/GitHub/Spring2019-Proj4-grp8-1/data/tesseract/",current_file_name,".txt",sep=""), warn=FALSE)
+  
+  ground_truth_vec <- str_split(paste(current_ground_truth_txt, collapse = " ")," ")[[1]]
+  tesseract_vec <- str_split(paste(current_tesseract_txt, collapse = " ")," ")[[1]]
+  ground_truth_vec <- ground_truth_vec %>% removePunctuation() %>% tolower()
+  tesseract_vec <- tesseract_vec %>% removePunctuation() %>% tolower()
+  #TODO: tesseract_post_vec
+  
+  # extract non-duplicate words
+  truth_unique <- ground_truth_vec[which(!(duplicated(ground_truth_vec)|
+                                             duplicated(ground_truth_vec, fromLast=TRUE)))]
+
+  tesseract_unique <- tesseract_vec[which(!(duplicated(tesseract_vec)|
+                                              duplicated(tesseract_vec, fromLast=TRUE)))]
+  
+  #tesseract_post_unique <- tesseract_post_unique[which(!(duplicated(tesseract_post_unique)|
+  #                                            duplicated(tesseract_post_unique, fromLast=TRUE)))]
+  
+  #intersection of unique words
+  char_old_intersect_vec<- vecsets::vintersect(truth_unique, tesseract_unique)
+  #char_new_intersect_vec<- vecsets::vintersect(truth_unique, tesseract_post_unique)
+  
+  #divide
+  truth_string <- divide_string(ground_truth_vec, char_old_intersect_vec)
+  tesseract_string <- divide_string(tesseract_vec, char_old_intersect_vec)
+  #truth_post_string <- divide_string(ground_truth_vec, char_new_intersect_vec)
+  #tesseract_post_string <- divide_string(tesseract_post_vec, char_new_intersect_vec)
+  
+  #count error characters
+  old_error <- count_error_char(truth_string, tesseract_string)
+  #new_error <- count_error_char(truth_post_string, tesseract_post_string)
+  
+  char_recall_before[i] <- 1 - old_error/sum(nchar(ground_truth_vec))
+  char_pres_before[i] <- 1 - old_error/sum(nchar(tesseract_vec))
+  #char_recall_post[i] <- 1 - new_error/length(ground_truth_vec)
+  #char_pres_post[i] <- 1 - new_error/sum(nchar(tesseract_vec))
+
+}
+```
+
+
+
+```{r}
+OCR_performance_table["character_wise_recall","Tesseract"] <- mean(char_recall_before)
+
+OCR_performance_table["character_wise_precision","Tesseract"] <- mean(char_pres_before)
+
+#OCR_performance_table["character_wise_recall","Tesseract_with_postprocessing"] <- mean(word_recall_post)
+
+#OCR_performance_table["character_wise_precision","Tesseract_with_postprocessing"] <- mean(word_pres_post)
+```
+
+```{r}
+#last step
+kable(OCR_performance_table, caption="Summary of OCR performance")
+```
+
+
+
