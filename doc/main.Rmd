@@ -132,7 +132,7 @@ source(paste0(project_path,"/lib/Detection.R"))
 
 build_dic = F
 build_dig = F
-detect_ocr = T
+detect_ocr = F
   
 if(build_dic){
   dictionary = Truth_Extract(ground_truth)
