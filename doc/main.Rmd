@@ -11,8 +11,6 @@ output:
     code_folding: hide
 ---
 
-Jing Wu
-
 GU4243/GR5243: Applied Data Science
 
 <style type="text/css">
@@ -110,20 +108,65 @@ The referenced papers are:
 
 In this statercode, we implement the first three rules in the first paper -- rule based techniques, as an example.
 
+## Read files
 ```{r}
-### only process one of the files in the folder as an example, in your project, you need to use all the files
-current_file_name <- sub(".txt","",file_name_vec[5])
 
-## read the ground truth text
-current_ground_truth_txt <- readLines(paste("../data/ground_truth/",current_file_name,".txt",sep=""), warn=FALSE)
+library(stringr)
+library(tm)
+library(tidytext)
+library(dplyr)
 
-## read the tesseract text
-current_tesseract_txt <- readLines(paste("../data/tesseract/",current_file_name,".txt",sep=""), warn=FALSE)
-clean_tesseract_txt <- paste(current_tesseract_txt, collapse = " ")
+project_path = "~/Desktop/GR5243 Applied Data Science/Project 4/Spring2019-Proj4-grp8"
+true_path = "/data/ground_truth/"
+OCR_path = "/data/tesseract/"
 
-## detect tesseract word error
-tesseract_vec <- str_split(clean_tesseract_txt," ")[[1]] #1124 tokens
-tesseract_if_clean <- unlist(lapply(tesseract_vec,ifCleanToken)) # source code of ifCleanToken in in lib folder
+ground_truth = list.files(path=paste0(project_path,true_path), pattern="*.txt", full.names=TRUE, recursive=FALSE)
+OCR = list.files(path=paste0(project_path,OCR_path), pattern="*.txt", full.names=TRUE, recursive=FALSE)
+
+n = length(ground_truth);n # number of files
+```
+
+
+```{r}
+source(paste0(project_path,"/lib/Detection.R"))
+
+build_dic = F
+build_dig = F
+detect_ocr = T
+  
+if(build_dic){
+  dictionary = Truth_Extract(ground_truth)
+  save(dictionary, file = paste0(project_path,"/output/GroundTruthWords.Rdata"))
+} else {
+  load(paste0(project_path,"/output/GroundTruthWords.Rdata"))
+}
+
+
+if(build_dig){
+  dic_digrams = Digrams(dictionary)
+  save(dic_digrams, file = paste0(project_path,"/output/digrams.Rdata"))
+ # write_csv(as.data.frame(dictionary), 
+  #          path  = paste0(project_path,"/output/dictionary.csv"))
+} else{
+  load(paste0(project_path,"/output/digrams.Rdata"))
+}
+#length(dic_digrams)
+#dic_digrams[[1]]
+#dic_digrams[[2]]
+
+
+if(detect_ocr){
+  detection_ocr = Detection(OCR, digrams = dic_digrams)
+  save(detection_ocr, file = paste0(project_path,"/output/detection_ocr.Rdata"))
+} else{
+  load(paste0(project_path,"/output/detection_ocr.Rdata"))
+}
+
+#length(detection_ocr)
+#head(detection_ocr[[1]],20)
+#tail(detection_ocr[[70]],20)
+
+
 ```
 
 # Step 4 - Error correction
