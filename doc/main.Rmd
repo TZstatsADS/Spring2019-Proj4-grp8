@@ -120,7 +120,7 @@ library(tidyverse)
 library(knitr)
 library(readr)
 
-project_path = "~/Desktop/columbia stuff/applied data science/ADS_ht2490/Spring2019-Proj4-grp8"
+project_path = "/Users/huyiyao/Desktop/ADS/Spring2019-Proj4-grp8/"
 true_path = "/data/ground_truth/"
 OCR_path = "/data/tesseract/"
 
@@ -379,6 +379,83 @@ for(i in 1:length(incorect_word)){
 performance measure
 
 ```{r}
+# functions
+#function to divide text into smaller strings between each unique intersection word
+divide_string <- function(vec, intersect_vec){
+  position <- c(0,which(vec %in% intersect_vec), length(vec))
+  string_list = list()
+  for(i in 1:(length(position)-1)){
+    str = character(0)
+    if(position[i+1] - position[i] > 1 ) {
+      for(j in (position[i]+1) : (position[i+1]-1)){
+        str = c(str, vec[j])
+      } 
+     }
+
+  string_list[[i]] = str
+  }
+  return(string_list)
+}
+
+# function to input two lists of strings, count number of error characters
+count_error_char <- function(list1, list2){
+  if(length(list1) == length(list2)){
+    no_of_error <- 0
+    for(i in 1:length(list1)){
+      no_of_error <- no_of_error + sum(diag(adist(list1[[i]], list2[[i]])))
+    }
+  }
+  else{ no_of_error <- NA }
+  
+  return(no_of_error)
+}
+
+# record all pairs of one word
+pairsdoc<-function(word){
+  pairs=c()
+n=nchar(word)
+if(n>1){
+m=0
+for (i in 1:(n-1)){
+for(j in 2:n){
+  if (i<j)
+    {m=m+1
+  pairs[m]<-c(paste(substr(word,i,i),substr(word,j,j),step=""))
+  }}
+}
+}
+else{pairs<-c("a")}
+return(pairs)
+}
+
+# compare 2 words and return error rate
+pairs_word_error<-function(word1,word2){
+pairs1<-pairsdoc(word1)
+pairs2<-pairsdoc(word2)
+l<-max(nchar(word1),nchar(word2))
+if(l>1){
+ratio<-1-length(vecsets::vintersect(pairs1,pairs2))/(l*(l-1)/2)}
+else {ratio=0}
+return(ratio)
+}
+
+#give two lists, return sum of error rate of all words
+sum_pairs_error <- function(list1, list2){
+ if(length(list1) == length(list2)){
+    sum_error <- 0
+    for(i in 1:length(list1)){
+      if(min(length(list1[[i]]),length(list2[[i]]))>0){
+      for(j in 1:min(length(list1[[i]]),length(list2[[i]]))){
+     sum_error <- sum_error + pairs_word_error(list1[[i]][j],list2[[i]][j])
+    }}}
+ }
+    else{ sum_error <- NA }
+  return(sum_error)
+}
+```
+
+
+```{r}
 # ------------------- Tesseract with postprocessing -----------------------
 load(paste0(project_path,"/output/corrected_word.Rdata"))
 file_name_vec <- list.files(paste0(project_path,"/data/ground_truth"))
@@ -429,6 +506,10 @@ char_recall_before <- numeric(n)
 char_pres_before <- numeric(n)
 char_recall_post <- numeric(n)
 char_pres_post <- numeric(n)
+pairs_recall_before <- numeric(n)
+pairs_pres_before <- numeric(n)
+pairs_recall_post <- numeric(n)
+pairs_pres_post <- numeric(n)
 
 for(i in 1:n){
   current_file_name <- sub(".txt","",file_name_vec[i])
@@ -484,30 +565,53 @@ for(i in 1:n){
   char_pres_before[i] <- 1 - old_error/sum(nchar(tesseract_vec))
   char_recall_post[i] <- 1 - new_error/sum(nchar(ground_truth_vec))
   char_pres_post[i] <- 1 - new_error/sum(nchar(tesseract_vec))
+  
+#------------------pairs level----------------------------------
+pairs_recall_before[i]<-1-sum_pairs_error(truth_string, tesseract_string)*(1/length(ground_truth_vec))
+pairs_pres_before[i]<-1-sum_pairs_error(truth_string, tesseract_string)*(1/length(tesseract_vec))
+pairs_recall_post[i] <- 1-sum_pairs_error(truth_post_string, tesseract_post_string)*(1/length(ground_truth_vec))
+pairs_pres_post[i]<- 1-sum_pairs_error(truth_post_string, tesseract_post_string)*(1/length(tesseract_vec))
+
 }
 
 
 
+#------------------measure_lsit-----------------
+measure_list<-cbind.data.frame( word_recall_before,word_pres_before,word_recall_post,word_pres_post,char_recall_before,char_pres_before,char_recall_post,char_pres_post,pairs_recall_before,pairs_pres_before,pairs_recall_post,pairs_pres_post)
+```
+
+```{r}
 # ------------------- performance table -----------------------
-OCR_performance_table <- data.frame("Tesseract" = rep(NA,4),
-                                    "Tesseract_with_postprocessing" = rep(NA,4))
-row.names(OCR_performance_table) <- c("word_wise_recall","word_wise_precision",
-                                      "character_wise_recall","character_wise_precision")
+OCR_performance_table <- data.frame("Tesseract" = rep(NA,6),
+                                    "Tesseract_with_postprocessing" = rep(NA,6),"Improvement"= rep(NA,6))
+row.names(OCR_performance_table) <- c("word_wise_recall","word_wise_precision","character_wise_recall","character_wise_precision","pairs_wise_recall","pairs_wise_precision")
 
 OCR_performance_table["word_wise_recall","Tesseract"] <-
-  mean(word_recall_before)
+  mean(measure_list$word_recall_before)
 OCR_performance_table["word_wise_precision","Tesseract"] <-
-  mean(word_pres_before)
+  mean(measure_list$word_pres_before)
 OCR_performance_table["word_wise_recall","Tesseract_with_postprocessing"]<-
-  mean(word_recall_post)
+  mean(measure_list$word_recall_post)
 OCR_performance_table["word_wise_precision","Tesseract_with_postprocessing"]<-
-  mean(word_pres_post)
+  mean(measure_list$word_pres_post)
+OCR_performance_table["word_wise_recall","Improvement"] <-OCR_performance_table[1,2]-OCR_performance_table[1,1]
+OCR_performance_table["word_wise_precision","Improvement"]<-OCR_performance_table[2,2]-OCR_performance_table[2,1]
+
 
 OCR_performance_table["character_wise_recall","Tesseract"] <-
-  mean(char_recall_before)
-OCR_performance_table["character_wise_precision","Tesseract"] <- mean(char_pres_before)
-OCR_performance_table["character_wise_recall","Tesseract_with_postprocessing"] <- mean(char_recall_post)
-OCR_performance_table["character_wise_precision","Tesseract_with_postprocessing"] <- mean(char_pres_post)
+  mean(measure_list$char_recall_before)
+OCR_performance_table["character_wise_precision","Tesseract"] <- mean(measure_list$char_pres_before)
+OCR_performance_table["character_wise_recall","Tesseract_with_postprocessing"] <- mean(measure_list$char_recall_post)
+OCR_performance_table["character_wise_precision","Tesseract_with_postprocessing"] <- mean(measure_list$char_pres_post)
+OCR_performance_table["character_wise_recall","Improvement"] <-OCR_performance_table[3,2]-OCR_performance_table[3,1]
+OCR_performance_table["character_wise_precision","Improvement"]<-OCR_performance_table[4,2]-OCR_performance_table[4,1]
+
+OCR_performance_table["pairs_wise_recall","Tesseract"] <-mean(measure_list$pairs_recall_before)
+OCR_performance_table["pairs_wise_precision","Tesseract"] <- mean(measure_list$pairs_pres_before)
+OCR_performance_table["pairs_wise_recall","Tesseract_with_postprocessing"] <- mean(measure_list$pairs_recall_post)
+OCR_performance_table["pairs_wise_precision","Tesseract_with_postprocessing"] <- mean(measure_list$pairs_pres_post)
+OCR_performance_table["pairs_wise_recall","Improvement"] <-OCR_performance_table[5,2]-OCR_performance_table[5,1]
+OCR_performance_table["pairs_wise_precision","Improvement"]<-OCR_performance_table[6,2]-OCR_performance_table[6,1]
 
 kable(OCR_performance_table, caption="Summary of OCR performance")
 ```
