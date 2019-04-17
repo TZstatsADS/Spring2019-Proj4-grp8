@@ -27,9 +27,9 @@ Term: Spring 2019
 
 + Hu, Xinyi: Extracted unique words in the ground truth text files and created the ground truth words dictionary. Coded the digrams for ground truth words dictionary. Designed the OCR post-processing text detection with Yiyao Hu. Coded the OCR post-processing detection.
 
-+ Hu, Yiyao:
++ Hu, Yiyao: Worked with Xinyi Hu to finish the clean data part and build a ground truth words dictionary. Realized the detection process and designed the OCR post-processing text detection. Worked with Shuang Lu on performance measure part. Designed and realized a new evaluation measurement to measure accuracy from the character-pairs view.
 
-+ Lu, shuang:
++ Lu, Shuang:
 
 + Tay, Hui Chiang:
 
