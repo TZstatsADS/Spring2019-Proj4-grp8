@@ -117,7 +117,9 @@ library(tidytext)
 library(dplyr)
 library(topicmodels)
 library(tidyverse)
+library(readr)
 
+project_path = "~/Desktop/columbia stuff/applied data science/ADS_ht2490/Spring2019-Proj4-grp8"
 true_path = "/data/ground_truth/"
 OCR_path = "/data/tesseract/"
 
@@ -194,6 +196,7 @@ The referenced papers are:
 
 Here, in our code, we just simply remove the detected-errors.
 ```{r}
+#tesseract_delete_error_vec <- tesseract_vec[tesseract_if_clean] #1095
 ```
 
 # Step 5 - Performance measure
