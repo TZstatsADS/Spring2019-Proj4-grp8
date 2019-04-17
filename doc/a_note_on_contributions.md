@@ -15,14 +15,14 @@ Team members: Hu Xinyi (xh2383), Hu Yiyao (yh3076), Lu Shuang (sl4397), Tay Hui 
 
 Contribution Statement
 
-Hu Xinyi:
++ Hu, Xinyi: Extracted unique words in the ground truth text files and created the ground truth words dictionary. Coded the digrams for ground truth words dictionary. Designed the OCR post-processing text detection with Yiyao Hu. Coded the OCR post-processing detection.
 
-Hu Yiyao:
++ Hu, Yiyao: Worked with Xinyi Hu to finish the clean data part and build a ground truth words dictionary. Realized the detection process and designed the OCR post-processing text detection. Worked with Shuang Lu on performance measure part. Designed and realized a new evaluation measurement to measure accuracy from the character-pairs view.
 
-Lu Shuang: Implemented word-level and character-level performance measure. Worked on error detection part. Helped with integrating the final main.rmd file. 
++ Lu, Shuang: Implemented word-level and character-level performance measure. Worked on error detection part. Helped with integrating the final main.rmd file.
 
-Tay Hui Chiang: Did part of error correction, helped with compiling main file, did presentation
++ Tay, Hui Chiang: Did part of error correction, helped to compile main.rmd file, did presentation
 
-Wang Tianchen: Improved and finished error correction part, helped with integrating the final main.rmd file.
++ Wang, Tianchen: Improved and finished error correction part, helped with integrating the final main.rmd file.
 
 All members contributed during group discussion
