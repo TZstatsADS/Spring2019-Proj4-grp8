@@ -115,6 +115,8 @@ library(stringr)
 library(tm)
 library(tidytext)
 library(dplyr)
+library(topicmodels)
+library(tidyverse)
 
 project_path = "~/Desktop/GR5243 Applied Data Science/Project 4/Spring2019-Proj4-grp8"
 true_path = "/data/ground_truth/"
@@ -226,6 +228,148 @@ OCR_performance_table["word_wise_recall","Tesseract_with_postprocessing"] <- len
 OCR_performance_table["word_wise_precision","Tesseract_with_postprocessing"] <- length(new_intersect_vec)/length(tesseract_delete_error_vec)
 kable(OCR_performance_table, caption="Summary of OCR performance")
 ```
+
+```{r correction model!}
+# -----------------------process data-----------------------
+wrong.words <- list()
+# path <- "/Users/tianchenwang/Git/Spring2019-Proj4-grp8/data/ground_truth/"
+path = paste0(project_path, "/data/ground_truth/")
+groundtruth.name <- list.files(path)
+groundtruth.docs <- list()
+for(i in 1:length(groundtruth.name)){
+  groundtruth.docs[i][[1]] <- read_file(paste0(path, groundtruth.name[i]))
+}
+
+# get tidy tibble data.
+ground_truth <- NULL
+for(i in 1:length(groundtruth.docs)){
+  # tem <- tibble(text = str_split(groundtruth.docs[i][[1]], "\n")[[1]], docid = i)
+  tem <- tibble(text = gsub("\n", " ", groundtruth.docs[i][[1]])[[1]], docid = i)
+  ground_truth <- rbind(ground_truth, tem)
+}
+
+# token
+ground_truth_tokenized <- ground_truth %>%
+  group_by(docid) %>%
+  # mutate(linenumber = row_number()) %>%
+  ungroup() %>%
+  unnest_tokens(word, text)
+
+ground_truth_tokenized <- ground_truth_tokenized %>%
+  count(docid, word, sort = TRUE)
+
+ground_truth_dtm <- ground_truth_tokenized %>%
+  cast_dtm(docid, word, n)
+
+# -----------------------topic modeling-----------------------
+K <- 30
+control_list <- list(
+  seed = list(1,2,3,4,5),
+  nstart = 5,
+  best = TRUE,
+  burnin = 1000,
+  iter = 600,
+  thin = 100
+)
+
+gd_LDA <- LDA(ground_truth_dtm, K, method = "Gibbs", control = control_list)
+
+word_prob <- gd_LDA %>%
+  tidy(matrix = "beta") %>%
+  arrange(topic, beta)
+  
+word_prob %>%
+  group_by(topic) %>%
+  top_n(5, beta) %>%
+  ungroup() %>%
+  arrange(topic, -beta)
+
+# path <- "/Users/tianchenwang/Git/Spring2019-Proj4-grp8/output/gd_LDA.Rdata"
+# save(gd_LDA, file =path)
+
+# candidate word list
+# path <- "/Users/tianchenwang/Git/Spring2019-Proj4-grp8/output/"
+# # load detection ...
+# load(paste0(path, "detection_ocr.Rdata"))
+
+incorect_word <- lapply(detection_ocr, function(x){
+  x[,1][x[,2] == "1"]
+})
+
+# save candidate words 
+# save(incorect_word, file = paste0(path, "incorrect_words.Rdata") )
+
+# -------------------correct word-----------------------
+all_correct_words <- read_csv(paste0(path, "dictionary.csv"))
+all_correct_words$l <- sapply(all_correct_words$dictionary, str_length)
+
+set <- list(all = 2,
+            sub = 2)
+# # c is from the same length words
+# agrep("apple", c("appre", "apply", "avxsa", "appple"), value = TRUE, max = set)
+# run THIS!!
+
+candidate_words <- lapply(incorect_word, function(x){
+  contianer <- list()
+  for(i in 1:length(x)){
+    dic <- all_correct_words[all_correct_words$l == str_length(x[i]), 1] 
+    contianer[[x[i]]] <- agrep(x[i], dic$dictionary, value = TRUE, max = set)
+  }
+  contianer
+})
+# save(candidate_words, file = paste0(path, "candidate_words.Rdata") )
+
+# -------------------load confusion matrix----------------------
+# path <- "/Users/tianchenwang/Git/Spring2019-Proj4-grp8/data/confusion_matrix/"
+path <- paste0(project_path, "/data/confusion_matrix/")
+sub_matrix <- read.csv(paste0(path, "sub_matrix.csv"), row.names = 1)
+
+# get probability sub_matrix
+sub_probmatrix <- t(t(sub_matrix) / apply(sub_matrix, 2, sum))
+
+# ------------------- words correction -----------------------
+lda_model <- gd_LDA
+corrected_word <- list()
+for(i in 1:length(incorect_word)){
+  corrected_word[[i]] = list()
+  # doc position in lda model
+  doc_pos <- which(lda_model@documents == as.character(i))
+  # topic prob for the doc
+  topic_prob <- lda_model@gamma[doc_pos, ]
+  for (current in incorect_word[[i]]) {
+    
+    candidates <- candidate_words[[i]][[current]]
+    if(length(candidates) > 0){
+      # get current incorrect word letters 
+      current_letters <- str_split(current, "")[[1]]
+      
+      # given topics word probability
+      scores <- sapply(candidates, function(x){
+        col_id <- which(lda_model@terms == x)
+        sum(lda_model@beta[,col_id] * topic_prob)
+      })
+      # compute letter probs
+      letter_probs <- sapply(candidates, function(x){
+        candidate_letters <- str_split(x, "")[[1]]
+        temp <- 1
+        for (k in 1:length(candidate_letters)){
+          temp <- temp*sub_probmatrix[candidate_letters[k],current_letters[k]] 
+        }
+        temp
+      })
+      # update final score 
+      scores <- scores * letter_probs
+      
+      # return the highest score candidate for the incorrect current
+      correct <- candidates[sample(which(scores == max(scores)), 1)]
+      corrected_word[[i]][[current]] <- correct
+    }
+    #
+  }
+}
+# correction part ends!
+```
+
 
 Besides the above required measurement, you are encouraged to explore more evaluation measurements. Here are some related references:
 

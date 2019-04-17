@@ -1,6 +1,6 @@
 ---
 title: "correction_model"
-author: "Tianchen Wang"
+author: "Wang, Tianchen and Tay, Hui Chiang"
 date: "2019/4/10"
 output: html_document
 ---
@@ -172,8 +172,8 @@ for(i in 1:length(incorect_word)){
 path = "/Users/tianchenwang/Git/Spring2019-Proj4-grp8/output/"
 save(corrected_word, file = paste0(path, "corrected_word.Rdata"))
 ```
-  
-precision and recall
+
+test
 ```{r}
 corrected_word[[1]]
 ```
