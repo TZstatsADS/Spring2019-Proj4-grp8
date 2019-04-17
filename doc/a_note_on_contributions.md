@@ -19,7 +19,7 @@ Hu Xinyi:
 
 Hu Yiyao:
 
-Lu Shuang:
+Lu Shuang: Implemented word-level and character-level performance measure. Worked on error detection part. Helped with integrating the final main.rmd file. 
 
 Tay Hui Chiang: Did part of error correction, helped with compiling main file, did presentation
 
