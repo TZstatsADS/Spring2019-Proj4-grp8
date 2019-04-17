@@ -118,6 +118,7 @@ library(dplyr)
 library(topicmodels)
 library(tidyverse)
 library(knitr)
+library(readr)
 
 project_path = "~/Desktop/columbia stuff/applied data science/ADS_ht2490/Spring2019-Proj4-grp8"
 true_path = "/data/ground_truth/"
@@ -275,7 +276,7 @@ control_list <- list(
 
 #Remove comment and run this line to run code for LDA, or just load the output we have already run
 #gd_LDA <- LDA(ground_truth_dtm, K, method = "Gibbs", control = control_list)
-source(paste0(project_path,"/output/gd_LDA.R"))
+load(paste0(project_path,"/output/gd_LDA.Rdata"))
 
 
 word_prob <- gd_LDA %>%
@@ -294,7 +295,7 @@ word_prob %>%
 # candidate word list
 # path <- "/Users/tianchenwang/Git/Spring2019-Proj4-grp8/output/"
 # # load detection ...
-load(paste0(path, "detection_ocr.Rdata"))
+load(paste0(project_path, "/output/detection_ocr.Rdata"))
 
 incorect_word <- lapply(detection_ocr, function(x){
   x[,1][x[,2] == "1"]
@@ -304,7 +305,7 @@ incorect_word <- lapply(detection_ocr, function(x){
 # save(incorect_word, file = paste0(path, "incorrect_words.Rdata") )
 
 # -------------------correct word-----------------------
-all_correct_words <- read_csv(paste0(path, "dictionary.csv"))
+all_correct_words <- read_csv(paste0(project_path, "/output/dictionary.csv"))
 all_correct_words$l <- sapply(all_correct_words$dictionary, str_length)
 
 set <- list(all = 2,
@@ -378,15 +379,15 @@ for(i in 1:length(incorect_word)){
 performance measure
 ```{r}
 # ------------------- Tesseract with postprocessing -----------------------
-load("../output/corrected_word.Rdata")
-file_name_vec <- list.files("../data/ground_truth")
+load(paste0(project_path,"/output/corrected_word.Rdata"))
+file_name_vec <- list.files(paste0(project_path,"/data/ground_truth"))
 n <- length(file_name_vec)
 corrected_text <- vector("list", length = (n+1))
 
 for(i in 1:n){
     current_file_name <- sub(".txt","",file_name_vec[i])
     current_tesseract_txt <-
-      readLines(paste("../data/tesseract/",current_file_name,".txt",sep=""), warn=FALSE)
+      readLines(paste0(project_path, paste("/data/tesseract/",current_file_name,".txt",sep="")), warn=FALSE)
     tesseract_vec <- str_split(paste(current_tesseract_txt, collapse = " ")," ")[[1]]
     tesseract_vec <- tesseract_vec %>% removePunctuation() %>% tolower()
 
@@ -414,12 +415,12 @@ for(i in 1:n){
     }
 }
 
-save(corrected_text, file = "../output/corrected_text.Rdata")
+#save(corrected_text, file = "../output/corrected_text.Rdata")
 
 
 # ------------------- performance evaluation -----------------------
-load("../output/corrected_text.Rdata")
-source("../lib/Performance.R")
+load(paste0(project_path,"/output/corrected_text.Rdata"))
+source(paste0(project_path,"/lib/Performance.R"))
 word_recall_before <- numeric(n)
 word_pres_before <- numeric(n)
 word_recall_post <- numeric(n)
@@ -433,10 +434,10 @@ for(i in 1:n){
   current_file_name <- sub(".txt","",file_name_vec[i])
 
   current_ground_truth_txt <-
-    readLines(paste("../data/ground_truth/",current_file_name,".txt",sep=""), warn=FALSE)
+    readLines(paste0(project_path, paste("/data/ground_truth/",current_file_name,".txt",sep="")), warn=FALSE)
 
   current_tesseract_txt <-
-    readLines(paste("../data/tesseract/",current_file_name,".txt",sep=""), warn=FALSE)
+    readLines(paste0(project_path, paste("/data/tesseract/",current_file_name,".txt",sep="")), warn=FALSE)
 
   ground_truth_vec <- str_split(paste(current_ground_truth_txt, collapse = " ")," ")[[1]]
   tesseract_vec <- str_split(paste(current_tesseract_txt, collapse = " ")," ")[[1]]
