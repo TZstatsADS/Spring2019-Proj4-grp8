@@ -16,8 +16,13 @@ Team members: Hu Xinyi (xh2383), Hu Yiyao (yh3076), Lu Shuang (sl4397), Tay Hui 
 Contribution Statement
 
 Hu Xinyi:
+
 Hu Yiyao:
+
 Lu Shuang:
+
 Tay Hui Chiang: Did part of error correction, helped with compiling main file, did presentation
-Wang Tianchen:
+
+Wang Tianchen: Improved and finished error correction part, helped with integrating the final main.rmd file.
+
 All members contributed during group discussion
