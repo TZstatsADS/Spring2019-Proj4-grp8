@@ -1,14 +1,17 @@
 ---
-title: 'Optical character recognition (OCR)'
+title: "Optical character recognition (OCR)"
 output:
+  pdf_document:
+    toc: yes
+    toc_depth: '2'
   html_document:
-    toc: true
+    code_folding: hide
+    number_sections: yes
+    toc: yes
     toc_depth: 2
     toc_float:
-      collapsed: false
-      smooth_scroll: false
-    number_sections: true
-    code_folding: hide
+      collapsed: no
+      smooth_scroll: no
 ---
 
 GU4243/GR5243: Applied Data Science
@@ -55,7 +58,9 @@ BUT this is not the FOCUS of this project!!!
 In this project, we are going to **focus on the third stage -- post-processing**, which includes two tasks: *error detection* and *error correction*.  
 
 # Step 1 - Load library and source code
-```{r, warning=FALSE, message = FALSE}
+```{r}
+project_path = "~/Desktop/GR5243 Applied Data Science/Project 4/Spring2019-Proj4-grp8"
+
 if (!require("devtools")) install.packages("devtools")
 if (!require("pacman")) {
   ## devtools is required
@@ -64,8 +69,8 @@ if (!require("pacman")) {
 }
 
 pacman::p_load(knitr, readr, stringr, tesseract, vecsets)
-source('../lib/ifCleanToken.R')
-file_name_vec <- list.files("../data/ground_truth") #100 files in total
+source(paste0(project_path,'/lib/ifCleanToken.R'))
+file_name_vec <- list.files(paste0(project_path,"/data/ground_truth")) #100 files in total
 ```
 
 # Step 2 - Read the files and conduct Tesseract OCR
@@ -76,14 +81,14 @@ Although we have processed the Tesseract OCR and save the output txt files in th
 for(i in c(1:length(file_name_vec))){
   current_file_name <- sub(".txt","",file_name_vec[i])
   ## png folder is not provided on github (the code is only for demonstration purpose)
-  current_tesseract_txt <- tesseract::ocr(paste("../data/png/",current_file_name,".png",sep=""))
+  current_tesseract_txt <- tesseract::ocr(paste(project_path,"/data/png/",current_file_name,".png",sep=""))
 
   ### clean the tessetact text (separate line by "\n", delete null string, transter to lower case)
   clean_tesseract_txt <- strsplit(current_tesseract_txt,"\n")[[1]]
   clean_tesseract_txt <- clean_tesseract_txt[clean_tesseract_txt!=""]
 
   ### save tesseract text file
-  writeLines(clean_tesseract_txt, paste("../data/tesseract/",current_file_name,".txt",sep=""))
+  writeLines(clean_tesseract_txt, paste(project_path,"/data/tesseract/",current_file_name,".txt",sep=""))
 }
 ```
 
@@ -109,7 +114,7 @@ The referenced papers are:
 In this statercode, we implement the first three rules in the first paper -- rule based techniques, as an example.
 
 ## Read files
-```{r}
+```{r warning=FALSE}
 
 library(stringr)
 library(tm)
@@ -120,7 +125,8 @@ library(tidyverse)
 library(knitr)
 library(readr)
 
-project_path = "/Users/huyiyao/Desktop/ADS/Spring2019-Proj4-grp8/"
+#project_path = "/Users/huyiyao/Desktop/ADS/Spring2019-Proj4-grp8/"
+project_path = "~/Desktop/GR5243 Applied Data Science/Project 4/Spring2019-Proj4-grp8"
 true_path = "/data/ground_truth/"
 OCR_path = "/data/tesseract/"
 
@@ -131,7 +137,7 @@ n = length(ground_truth);n # number of files
 ```
 
 
-```{r}
+```{r warning=FALSE} 
 source(paste0(project_path,"/lib/Detection.R"))
 
 build_dic = F
@@ -231,7 +237,7 @@ OCR_performance_table["word_wise_precision","Tesseract_with_postprocessing"] <- 
 kable(OCR_performance_table, caption="Summary of OCR performance")
 ```
 
-```{r correction model!}
+```{r warning=FALSE}
 # -----------------------process data-----------------------
 wrong.words <- list()
 # path <- "/Users/tianchenwang/Git/Spring2019-Proj4-grp8/data/ground_truth/"
@@ -275,8 +281,14 @@ control_list <- list(
 )
 
 #Remove comment and run this line to run code for LDA, or just load the output we have already run
-#gd_LDA <- LDA(ground_truth_dtm, K, method = "Gibbs", control = control_list)
-load(paste0(project_path,"/output/gd_LDA.Rdata"))
+run_lda <- F
+if(run_lda){
+  gd_LDA <- LDA(ground_truth_dtm, K, method = "Gibbs", control = control_list)
+  save(gd_LDA, file = paste0(project_path, "/output/gd_LDA.Rdata"))
+
+} else {
+  load(paste0(project_path,"/output/gd_LDA.Rdata"))
+  }
 
 
 word_prob <- gd_LDA %>%
@@ -313,16 +325,22 @@ set <- list(all = 2,
 # # c is from the same length words
 # agrep("apple", c("appre", "apply", "avxsa", "appple"), value = TRUE, max = set)
 # run THIS!!
-
-candidate_words <- lapply(incorect_word, function(x){
-  contianer <- list()
-  for(i in 1:length(x)){
-    dic <- all_correct_words[all_correct_words$l == str_length(x[i]), 1]
-    contianer[[x[i]]] <- agrep(x[i], dic$dictionary, value = TRUE, max = set)
-  }
-  contianer
-})
-# save(candidate_words, file = paste0(path, "candidate_words.Rdata") )
+run_candidate_words <- F
+if(run_candidate_words){
+  
+  candidate_words <- lapply(incorect_word, function(x){
+    contianer <- list()
+    for(i in 1:length(x)){
+      dic <- all_correct_words[all_correct_words$l == str_length(x[i]), 1]
+      contianer[[x[i]]] <- agrep(x[i], dic$dictionary, value = TRUE, 
+                                 max = set)
+   }
+    contianer
+  })
+  
+} else {load(paste0(project_path, "/output/candidate_words.Rdata"))}
+# save(candidate_words, file = paste0(project_path, "candidate_words.Rdata") )
+# load(paste0(project_path, "candidate_words.Rdata"))
 
 # -------------------load confusion matrix----------------------
 # path <- "/Users/tianchenwang/Git/Spring2019-Proj4-grp8/data/confusion_matrix/"
@@ -335,7 +353,9 @@ sub_probmatrix <- t(t(sub_matrix) / apply(sub_matrix, 2, sum))
 # ------------------- words correction -----------------------
 lda_model <- gd_LDA
 corrected_word <- list()
-for(i in 1:length(incorect_word)){
+run_corrected_word <- F
+if(run_corrected_word){
+  for(i in 1:length(incorect_word)){
   corrected_word[[i]] = list()
   # doc position in lda model
   doc_pos <- which(lda_model@documents == as.character(i))
@@ -372,13 +392,17 @@ for(i in 1:length(incorect_word)){
     #
   }
 }
+  #save(corrected_word,file = paste0(project_path,"/output/corrected_word.Rdata"))
+} else {load(paste0(project_path,"/output/corrected_word.Rdata"))}
+
+
 # correction part ends!
 ```
 
 
 performance measure
 
-```{r}
+```{r warning=FALSE}
 # functions
 #function to divide text into smaller strings between each unique intersection word
 divide_string <- function(vec, intersect_vec){
@@ -457,12 +481,14 @@ sum_pairs_error <- function(list1, list2){
 
 ```{r}
 # ------------------- Tesseract with postprocessing -----------------------
-load(paste0(project_path,"/output/corrected_word.Rdata"))
+#load(paste0(project_path,"/output/corrected_word.Rdata"))
 file_name_vec <- list.files(paste0(project_path,"/data/ground_truth"))
 n <- length(file_name_vec)
-corrected_text <- vector("list", length = (n+1))
 
-for(i in 1:n){
+run_corrected_text <- F
+if(run_corrected_text){
+  corrected_text <- vector("list", length = (n+1))
+  for(i in 1:n){
     current_file_name <- sub(".txt","",file_name_vec[i])
     current_tesseract_txt <-
       readLines(paste0(project_path, paste("/data/tesseract/",current_file_name,".txt",sep="")), warn=FALSE)
@@ -491,12 +517,15 @@ for(i in 1:n){
     for(words in tesseract_vec){
       corrected_text[[i]] <- c(corrected_text[[i]], dic[[words]])
     }
-}
+  }
+  save(corrected_text, file = paste0(project_path,"/output/corrected_text.Rdata"))
+} else {
+  load(paste0(project_path,"/output/corrected_text.Rdata"))
+  }
 
-#save(corrected_text, file = "../output/corrected_text.Rdata")
 
 # ------------------- performance evaluation -----------------------
-load(paste0(project_path,"/output/corrected_text.Rdata"))
+#load(paste0(project_path,"/output/corrected_text.Rdata"))
 source(paste0(project_path,"/lib/Performance.R"))
 word_recall_before <- numeric(n)
 word_pres_before <- numeric(n)
@@ -580,7 +609,7 @@ pairs_pres_post[i]<- 1-sum_pairs_error(truth_post_string, tesseract_post_string)
 measure_list<-cbind.data.frame( word_recall_before,word_pres_before,word_recall_post,word_pres_post,char_recall_before,char_pres_before,char_recall_post,char_pres_post,pairs_recall_before,pairs_pres_before,pairs_recall_post,pairs_pres_post)
 ```
 
-```{r}
+```{r warning=FALSE}
 # ------------------- performance table -----------------------
 OCR_performance_table <- data.frame("Tesseract" = rep(NA,6),
                                     "Tesseract_with_postprocessing" = rep(NA,6),"Improvement"= rep(NA,6))
