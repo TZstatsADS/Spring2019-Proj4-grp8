@@ -728,7 +728,6 @@ for(i in 1:n){
 
 #save(corrected_text, file = &quot;../output/corrected_text.Rdata&quot;)
 
-
 # ------------------- performance evaluation -----------------------
 load(paste0(project_path,&quot;/output/corrected_text.Rdata&quot;))
 source(paste0(project_path,&quot;/lib/Performance.R&quot;))
@@ -805,12 +804,17 @@ OCR_performance_table &lt;- data.frame(&quot;Tesseract&quot; = rep(NA,4),
 row.names(OCR_performance_table) &lt;- c(&quot;word_wise_recall&quot;,&quot;word_wise_precision&quot;,
                                       &quot;character_wise_recall&quot;,&quot;character_wise_precision&quot;)
 
-OCR_performance_table[&quot;word_wise_recall&quot;,&quot;Tesseract&quot;] &lt;- mean(word_recall_before)
-OCR_performance_table[&quot;word_wise_precision&quot;,&quot;Tesseract&quot;] &lt;- mean(word_pres_before)
-OCR_performance_table[&quot;word_wise_recall&quot;,&quot;Tesseract_with_postprocessing&quot;] &lt;- mean(word_recall_post)
-OCR_performance_table[&quot;word_wise_precision&quot;,&quot;Tesseract_with_postprocessing&quot;] &lt;-mean(word_pres_post)
+OCR_performance_table[&quot;word_wise_recall&quot;,&quot;Tesseract&quot;] &lt;-
+  mean(word_recall_before)
+OCR_performance_table[&quot;word_wise_precision&quot;,&quot;Tesseract&quot;] &lt;-
+  mean(word_pres_before)
+OCR_performance_table[&quot;word_wise_recall&quot;,&quot;Tesseract_with_postprocessing&quot;]&lt;-
+  mean(word_recall_post)
+OCR_performance_table[&quot;word_wise_precision&quot;,&quot;Tesseract_with_postprocessing&quot;]&lt;-
+  mean(word_pres_post)
 
-OCR_performance_table[&quot;character_wise_recall&quot;,&quot;Tesseract&quot;] &lt;- mean(char_recall_before)
+OCR_performance_table[&quot;character_wise_recall&quot;,&quot;Tesseract&quot;] &lt;-
+  mean(char_recall_before)
 OCR_performance_table[&quot;character_wise_precision&quot;,&quot;Tesseract&quot;] &lt;- mean(char_pres_before)
 OCR_performance_table[&quot;character_wise_recall&quot;,&quot;Tesseract_with_postprocessing&quot;] &lt;- mean(char_recall_post)
 OCR_performance_table[&quot;character_wise_precision&quot;,&quot;Tesseract_with_postprocessing&quot;] &lt;- mean(char_pres_post)

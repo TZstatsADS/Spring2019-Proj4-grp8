@@ -495,19 +495,19 @@ row.names(OCR_performance_table) <- c("word_wise_recall","word_wise_precision",
                                       "character_wise_recall","character_wise_precision")
 
 OCR_performance_table["word_wise_recall","Tesseract"] <-
-  mean(measure_list$word_recall_before)
+  mean(word_recall_before)
 OCR_performance_table["word_wise_precision","Tesseract"] <-
-  mean(measure_list$word_pres_before)
+  mean(word_pres_before)
 OCR_performance_table["word_wise_recall","Tesseract_with_postprocessing"]<-
-  mean(measure_list$word_recall_post)
+  mean(word_recall_post)
 OCR_performance_table["word_wise_precision","Tesseract_with_postprocessing"]<-
-  mean(measure_list$word_pres_post)
+  mean(word_pres_post)
 
 OCR_performance_table["character_wise_recall","Tesseract"] <-
-  mean(measure_list$char_recall_before)
-OCR_performance_table["character_wise_precision","Tesseract"] <- mean(measure_list$char_pres_before)
-OCR_performance_table["character_wise_recall","Tesseract_with_postprocessing"] <- mean(measure_list$char_recall_post)
-OCR_performance_table["character_wise_precision","Tesseract_with_postprocessing"] <- mean(measure_list$char_pres_post)
+  mean(char_recall_before)
+OCR_performance_table["character_wise_precision","Tesseract"] <- mean(char_pres_before)
+OCR_performance_table["character_wise_recall","Tesseract_with_postprocessing"] <- mean(char_recall_post)
+OCR_performance_table["character_wise_precision","Tesseract_with_postprocessing"] <- mean(char_pres_post)
 
 kable(OCR_performance_table, caption="Summary of OCR performance")
 ```
